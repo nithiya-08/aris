@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <title>Customer Dashboard - SkillBridge</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="security-utils.js"></script>
+    <style>
+        /* Dashboard specific styles */
+        .dashboard-navbar {
+            background-color: #007bff;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-nav-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .dashboard-logo {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+
+        .dashboard-site-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        /* Welcome section */
+        .welcome-section {
+            background-color: #007bff;
+            color: white;
+            padding: 4rem 2rem;
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Main container */
+        .dashboard-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Post Job Card */
+        .post-job-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .post-job-card h2 {
+            color: #007bff;
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* My Posted Jobs Section */
+        .jobs-section {
+            margin-top: 3rem;
+        }
+
+        .jobs-section h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .posted-job-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .posted-job-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .job-title-section h3 {
+            color: #007bff;
+            font-size: 1.3rem;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .job-status-badge {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .job-detail {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-detail strong {
+            color: #333;
+        }
+
+        .job-action-btn {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .job-action-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Matched Workers Section */
+        .workers-section {
+            margin-top: 3rem;
+        }
+
+        .workers-section h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .workers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .worker-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .worker-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .worker-name {
+            color: #007bff;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .worker-detail {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .worker-detail strong {
+            color: #333;
+        }
+
+        .worker-rating {
+            color: #ffc107;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .hire-btn {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 1rem;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .hire-btn:hover {
+            background-color: #218838;
+        }
+
+        /* Rate Worker Section */
+        .rate-worker-section {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .rate-worker-section h2 {
+            color: #007bff;
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .star {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffc107;
+        }
+
+        /* Success modal */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .success-modal.show {
+            display: flex;
+        }
+
+        .success-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .success-content .checkmark {
+            color: #28a745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-content h3 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-content p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .success-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .success-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Emergency Job Styles */
+        .emergency-warning {
+            display: none;
+            background-color: #fff3cd;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #856404;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .emergency-warning.show {
+            display: block;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .emergency-fields {
+            display: none;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .emergency-fields.show {
+            display: block;
+        }
+
+        .emergency-badge {
+            background-color: #dc3545;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: 600;
+            display: inline-block;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+
+        /* Emergency Alert Banner */
+        .emergency-banner {
+            display: none;
+            background-color: #dc3545;
+            color: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            border-left: 5px solid #ff6b6b;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .emergency-banner.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .emergency-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .emergency-banner-icon {
+            font-size: 2rem;
+            animation: ring 0.5s infinite;
+        }
+
+        @keyframes ring {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 20% { transform: rotate(-15deg); }
+            30%, 50%, 70%, 90% { transform: rotate(15deg); }
+            40%, 60%, 80% { transform: rotate(-15deg); }
+        }
+
+        .emergency-banner-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .emergency-banner-details {
+            background-color: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .emergency-banner-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .emergency-banner-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .emergency-accept-btn,
+        .emergency-ignore-btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .emergency-accept-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .emergency-accept-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .emergency-ignore-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .emergency-ignore-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .notification-badge {
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Radio Group Styles */
+        .job-type-section label {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .radio-group input[type="radio"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard-navbar {
+                padding: 1rem;
+            }
+
+            .dashboard-site-name {
+                font-size: 1.2rem;
+            }
+
+            .welcome-section {
+                padding: 2rem 1rem;
+                margin-top: 60px;
+            }
+
+            .welcome-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .post-job-card {
+                padding: 1.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-container {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-navbar {
+                padding: 0.75rem;
+            }
+
+            .dashboard-logo {
+                font-size: 1.5rem;
+                margin-right: 0.5rem;
+            }
+
+            .dashboard-site-name {
+                font-size: 1rem;
+            }
+
+            .logout-btn {
+                padding: 0.4rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .welcome-section {
+                padding: 1.5rem 1rem;
+            }
+
+            .welcome-section h1 {
+                font-size: 1.5rem;
+            }
+
+            .welcome-section p {
+                font-size: 0.95rem;
+            }
+
+            .post-job-card {
+                padding: 1rem;
+            }
+
+            .post-job-card h2 {
+                font-size: 1.3rem;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                padding: 0.6rem;
+                font-size: 16px;
+            }
+
+            .jobs-section h2,
+            .workers-section h2,
+            .rate-worker-section h2 {
+                font-size: 1.5rem;
+            }
+
+            .success-content {
+                padding: 2rem;
+            }
+
+            .success-content .checkmark {
+                font-size: 2.5rem;
+            }
+
+            .success-content h3 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="dashboard-navbar">
+        <div class="dashboard-nav-left">
+            <div class="dashboard-logo">🔗</div>
+            <div class="dashboard-site-name">SkillBridge</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+
+    <!-- Welcome Section -->
+    <section class="welcome-section">
+        <h1 id="welcomeMessage">Welcome back!</h1>
+        <p>Find verified local talent easily</p>
+    </section>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+        <!-- Post Job Card -->
+        <div class="post-job-card">
+            <h2>Post a New Job</h2>
+            <form id="jobForm">
+                <div class="form-grid">
+                    <!-- Job Title -->
+                    <div class="form-group full-width">
+                        <label for="jobTitle">Job Title *</label>
+                        <input 
+                            type="text" 
+                            id="jobTitle" 
+                            name="jobTitle" 
+                            required 
+                            placeholder="e.g., House Wiring Installation"
+                        >
+                    </div>
+
+                    <!-- Required Skill -->
+                    <div class="form-group">
+                        <label for="requiredSkill">Required Skill *</label>
+                        <select id="requiredSkill" name="requiredSkill" required>
+                            <option value="">Select a skill</option>
+                            <option value="Electrician">Electrician</option>
+                            <option value="Plumber">Plumber</option>
+                            <option value="Mechanic">Mechanic</option>
+                            <option value="Carpenter">Carpenter</option>
+                            <option value="Tailor">Tailor</option>
+                            <option value="Painter">Painter</option>
+                            <option value="Mason">Mason</option>
+                        </select>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" required placeholder="e.g., Villupuram" />
+                    </div>
+
+                    <!-- Budget -->
+                    <div class="form-group">
+                        <label for="budget">Budget (in INR) *</label>
+                        <input type="number" id="budget" name="budget" required min="0" placeholder="e.g., 1500" />
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="form-group full-width">
+                        <label for="jobDescription">Job Description *</label>
+                        <textarea id="jobDescription" name="jobDescription" required placeholder="Describe job details..." style="min-height: 100px;"></textarea>
+                    </div>
+
+                    <!-- Job Type - Radio Buttons -->
+                    <div class="form-group full-width">
+                        <div class="job-type-section">
+                            <label style="display: block; margin-bottom: 1rem; font-weight: 600;">Job Type *</label>
+                            <div class="radio-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="jobType" value="normal" checked> Normal Job
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #dc3545; font-weight: bold;">
+                                    <input type="radio" name="jobType" value="emergency"> 🚨 EMERGENCY
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Box -->
+                    <div id="emergencyBox" style="max-width: 750px; margin: 0 auto; padding:10px; font-size:13px;display: none; background-color: #dc3545; color: white; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; grid-column: 1 / -1;">
+                        <p style="margin-bottom: 1.5rem; font-weight: 600; font-size: 1.1rem;">⚠️ This job will alert all nearby verified workers immediately!</p>
+                        
+                        <!-- Emergency Job Title -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencyJobTitle" style="color: white; font-weight: 500;">Job Title *</label>
+                            <input 
+                                type="text" 
+                                id="emergencyJobTitle" 
+                                name="emergencyJobTitle" 
+                                placeholder="e.g., Fix electrical short circuit"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; box-sizing: border-box;"
+                            >
+                        </div>
+
+                        <!-- Emergency Required Skill -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencySkill" style="color: white; font-weight: 500;">Required Skill *</label>
+                            <select id="emergencySkill" name="emergencySkill" style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; background-color: white; color: #333; box-sizing: border-box;">
+                                <option value="">Select skill</option>
+                                <option value="Electrician">Electrician</option>
+                                <option value="Plumber">Plumber</option>
+                                <option value="Mechanic">Mechanic</option>
+                                <option value="Carpenter">Carpenter</option>
+                                <option value="Tailor">Tailor</option>
+                                <option value="Painter">Painter</option>
+                                <option value="Mason">Mason</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Emergency Location -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencyLocation" style="color: white; font-weight: 500;">Location *</label>
+                            <input 
+                                type="text" 
+                                id="emergencyLocation" 
+                                name="emergencyLocation" 
+                                placeholder="e.g., Villupuram, Tamil Nadu"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; box-sizing: border-box;"
+                            >
+                        </div>
+
+                        <!-- Emergency Budget -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencyBudget" style="color: white; font-weight: 500;">Budget in Rupees *</label>
+                            <input 
+                                type="number" 
+                                id="emergencyBudget" 
+                                name="emergencyBudget" 
+                                placeholder="e.g., 2000"
+                                min="0"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; box-sizing: border-box;"
+                            >
+                        </div>
+
+                        <!-- Emergency Job Requirements -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencyRequirements" style="color: white; font-weight: 500;">Job Requirements *</label>
+                            <textarea 
+                                id="emergencyRequirements" 
+                                name="emergencyRequirements" 
+                                placeholder="Describe what exactly needs to be done...&#10;e.g., Short circuit in main switch board, need immediate repair"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; min-height: 100px; box-sizing: border-box; font-family: Arial, sans-serif;"
+                            ></textarea>
+                        </div>
+
+                        <!-- Needed By -->
+                        <div class="form-group full-width" style="margin-bottom: 1rem;">
+                            <label for="emergencyNeededBy" style="color: white; font-weight: 500;">Needed By *</label>
+                            <select id="emergencyNeededBy" name="emergencyNeededBy" style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; background-color: white; color: #333; box-sizing: border-box;">
+                                <option value="">Select urgency</option>
+                                <option value="Within 1 hour">Within 1 hour</option>
+                                <option value="Within 2 hours">Within 2 hours</option>
+                                <option value="Within today">Within today</option>
+                                <option value="Tomorrow">Tomorrow</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Emergency Contact Number -->
+                        <div class="form-group full-width">
+                            <label for="emergencyPhoneNumber" style="color: white; font-weight: 500;">Emergency Contact Number *</label>
+                            <input 
+                                type="tel" 
+                                id="emergencyPhoneNumber" 
+                                name="emergencyPhoneNumber" 
+                                placeholder="Your 10-digit phone number"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid white; border-radius: 5px; font-size: 1rem; box-sizing: border-box;"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn">Post Job</button>
+            </form>
+        </div>
+
+        <!-- My Posted Jobs Section -->
+        <section class="jobs-section">
+            <h2>My Posted Jobs</h2>
+            <div class="jobs-grid" id="postedJobsGrid">
+                <p style="grid-column: 1 / -1; text-align: center; color: #999;">No jobs posted yet</p>
+            </div>
+        </section>
+
+        <!-- Verified Workers Section -->
+        <section class="workers-section">
+            <h2>Verified Workers Near You</h2>
+            <div class="workers-grid">
+                <!-- Worker Card 1 -->
+                <div class="worker-card">
+                    <div class="worker-name">Ravi Kumar</div>
+                    <div class="worker-detail"><strong>Skill:</strong> Electrician - Expert</div>
+                    <div class="worker-detail"><strong>Location:</strong> Villupuram</div>
+                    <div class="worker-rating">★★★★☆ 4.5 stars</div>
+                    <div class="worker-detail"><strong>Passport ID:</strong> SKILL-100</div>
+                    <button class="hire-btn" onclick="hireWorker('Ravi Kumar')">Hire Now</button>
+                </div>
+
+                <!-- Worker Card 2 -->
+                <div class="worker-card">
+                    <div class="worker-name">Suresh M</div>
+                    <div class="worker-detail"><strong>Skill:</strong> Plumber - Intermediate</div>
+                    <div class="worker-detail"><strong>Location:</strong> Tindivanam</div>
+                    <div class="worker-rating">★★★★☆ 4.0 stars</div>
+                    <div class="worker-detail"><strong>Passport ID:</strong> SKILL-101</div>
+                    <button class="hire-btn" onclick="hireWorker('Suresh M')">Hire Now</button>
+                </div>
+
+                <!-- Worker Card 3 -->
+                <div class="worker-card">
+                    <div class="worker-name">Mani K</div>
+                    <div class="worker-detail"><strong>Skill:</strong> Mechanic - Expert</div>
+                    <div class="worker-detail"><strong>Location:</strong> Villupuram</div>
+                    <div class="worker-rating">★★★★★ 4.8 stars</div>
+                    <div class="worker-detail"><strong>Passport ID:</strong> SKILL-102</div>
+                    <button class="hire-btn" onclick="hireWorker('Mani K')">Hire Now</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rate Worker Section -->
+        <section class="rate-worker-section">
+            <h2>Rate a Worker</h2>
+            <form id="rateWorkerForm">
+                <div class="form-group">
+                    <label for="workerName">Worker Name *</label>
+                    <input 
+                        type="text" 
+                        id="workerName" 
+                        name="workerName" 
+                        required 
+                        placeholder="Enter worker's name"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Rating *</label>
+                    <div class="rating-stars">
+                        <span class="star" data-rating="1" onclick="setRating(1)">★</span>
+                        <span class="star" data-rating="2" onclick="setRating(2)">★</span>
+                        <span class="star" data-rating="3" onclick="setRating(3)">★</span>
+                        <span class="star" data-rating="4" onclick="setRating(4)">★</span>
+                        <span class="star" data-rating="5" onclick="setRating(5)">★</span>
+                    </div>
+                    <input type="hidden" id="ratingValue" name="ratingValue" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="comment">Comment</label>
+                    <textarea 
+                        id="comment" 
+                        name="comment" 
+                        placeholder="Share your experience with this worker..."
+                    ></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit Rating</button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="success-modal" id="successModal">
+        <div class="success-content">
+            <div class="checkmark">✓</div>
+            <h3 id="successTitle">Success!</h3>
+            <p id="successMessage">Operation completed successfully.</p>
+            <button class="success-btn" onclick="closeSuccessModal()">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedRating = 0;
+
+        // Handle job type radio buttons
+        function handleJobTypeChange() {
+            const jobTypeRadios = document.querySelectorAll('input[name="jobType"]');
+            const emergencyBox = document.getElementById('emergencyBox');
+            
+            jobTypeRadios.forEach(radio => {
+                if (radio.checked && radio.value === 'emergency') {
+                    emergencyBox.style.display = 'block';
+                    return;
+                }
+            });
+            
+            if (!Array.from(jobTypeRadios).some(r => r.checked && r.value === 'emergency')) {
+                emergencyBox.style.display = 'none';
+            }
+        }
+
+        // Load customer data and jobs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const customerName = localStorage.getItem('customerName') || 'Customer';
+            document.getElementById('welcomeMessage').textContent = `Welcome back, ${customerName}!`;
+
+            // Load and display posted jobs
+            loadPostedJobs();
+
+            // Add event listeners for job type radio buttons
+            document.querySelectorAll('input[name="jobType"]').forEach(radio => {
+                radio.addEventListener('change', handleJobTypeChange);
+            });
+
+            // Handle post job form
+            document.getElementById('jobForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const jobTitle = document.getElementById('jobTitle').value.trim();
+                const requiredSkill = document.getElementById('requiredSkill').value;
+                const jobTypeRadios = document.querySelectorAll('input[name="jobType"]');
+                const jobType = Array.from(jobTypeRadios).find(r => r.checked)?.value || '';
+                const location = document.getElementById('location').value.trim();
+                const budget = document.getElementById('budget').value;
+                const jobDescription = document.getElementById('jobDescription').value.trim();
+
+                if (!jobTitle || !requiredSkill || !jobType || !location || !budget || !jobDescription) {
+                    alert('Please fill in all required fields.');
+                    return;
+                }
+
+                // Validate emergency fields if Emergency job
+                let emergencyJobTitle = '';
+                let emergencySkill = '';
+                let emergencyLocation = '';
+                let emergencyBudget = '';
+                let emergencyRequirements = '';
+                let emergencyNeededBy = '';
+                let emergencyPhoneNumber = '';
+                
+                if (jobType === 'emergency') {
+                    emergencyJobTitle = document.getElementById('emergencyJobTitle').value.trim();
+                    emergencySkill = document.getElementById('emergencySkill').value;
+                    emergencyLocation = document.getElementById('emergencyLocation').value.trim();
+                    emergencyBudget = document.getElementById('emergencyBudget').value;
+                    emergencyRequirements = document.getElementById('emergencyRequirements').value.trim();
+                    emergencyNeededBy = document.getElementById('emergencyNeededBy').value;
+                    emergencyPhoneNumber = document.getElementById('emergencyPhoneNumber').value.trim();
+                    
+                    if (!emergencyJobTitle || !emergencySkill || !emergencyLocation || !emergencyBudget || !emergencyRequirements || !emergencyNeededBy || !emergencyPhoneNumber) {
+                        alert('Please fill in all emergency fields.');
+                        return;
+                    }
+                    
+                    if (!/^\d{10}$/.test(emergencyPhoneNumber)) {
+                        alert('Please enter a valid 10-digit contact number.');
+                        return;
+                    }
+                    
+                    // For emergency jobs, override the form fields with emergency box values
+                    jobTitle = emergencyJobTitle;
+                    requiredSkill = emergencySkill;
+                    location = emergencyLocation;
+                    budget = emergencyBudget;
+                    jobDescription = emergencyRequirements;
+                }
+
+                const jobPayload = {
+                    title: jobTitle,
+                    skillRequired: requiredSkill,
+                    location: location,
+                    budget: String(budget),
+                    hirerId: 1
+                };
+
+                fetch('http://localhost:8080/api/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jobPayload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Backend responded with ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(serverJob => {
+                    console.log('Job saved to backend:', serverJob);
+                })
+                .catch(error => {
+                    console.error('Error posting job to backend:', error);
+                    alert('Something went wrong while posting the job to backend: ' + error.message);
+                });
+
+                // Save job to localStorage (still keeping frontend list working)
+                let postedJobs = JSON.parse(localStorage.getItem('postedJobs')) || [];
+                const newJob = {
+                    id: Date.now(),
+                    jobTitle,
+                    requiredSkill,
+                    jobType,
+                    location,
+                    budget,
+                    jobDescription,
+                    neededBy: jobType === 'emergency' ? emergencyNeededBy : '',
+                    emergencyContact: jobType === 'emergency' ? emergencyPhoneNumber : '',
+                    status: 'Active'
+                };
+                postedJobs.push(newJob);
+                localStorage.setItem('postedJobs', JSON.stringify(postedJobs));
+
+                // If emergency job, save to emergency jobs list
+                if (jobType === 'emergency') {
+                    let emergencyJobs = JSON.parse(localStorage.getItem('emergencyJobs')) || [];
+                    const emergencyJobData = {
+                        ...newJob,
+                        postedTime: new Date().toISOString()
+                    };
+                    emergencyJobs.push(emergencyJobData);
+                    localStorage.setItem('emergencyJobs', JSON.stringify(emergencyJobs));
+
+                    // Show success modal
+                    document.getElementById('successTitle').textContent = 'Emergency Alert Sent!';
+                    document.getElementById('successMessage').textContent = 'Your emergency job alert has been sent to all nearby verified workers!';
+                } else {
+                    // Show success modal for normal job
+                    document.getElementById('successTitle').textContent = 'Job Posted Successfully!';
+                    document.getElementById('successMessage').textContent = 'Your job has been posted and is now visible to verified workers.';
+                }
+                document.getElementById('successModal').classList.add('show');
+
+                // Reload jobs
+                loadPostedJobs();
+
+                // Reset form
+                this.reset();
+                handleJobTypeChange();
+            });
+
+            // Handle rate worker form
+            document.getElementById('rateWorkerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const workerName = document.getElementById('workerName').value.trim();
+                const ratingValue = document.getElementById('ratingValue').value;
+                const comment = document.getElementById('comment').value.trim();
+
+                if (!workerName || ratingValue === '0') {
+                    alert('Please enter worker name and select a rating.');
+                    return;
+                }
+
+                // Save rating to localStorage
+                let ratings = JSON.parse(localStorage.getItem('workerRatings')) || [];
+                const newRating = {
+                    id: Date.now(),
+                    workerName,
+                    rating: ratingValue,
+                    comment,
+                    timestamp: new Date().toISOString()
+                };
+                ratings.push(newRating);
+                localStorage.setItem('workerRatings', JSON.stringify(ratings));
+
+                // Show success modal
+                document.getElementById('successTitle').textContent = 'Rating Submitted!';
+                document.getElementById('successMessage').textContent = 'Thank you for rating the worker. Your feedback helps us maintain quality.';
+                document.getElementById('successModal').classList.add('show');
+
+                // Reset form
+                this.reset();
+                selectedRating = 0;
+                document.getElementById('ratingValue').value = '0';
+                document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+            });
+        });
+
+        function loadPostedJobs() {
+            const postedJobs = JSON.parse(localStorage.getItem('postedJobs')) || [];
+            const jobsGrid = document.getElementById('postedJobsGrid');
+
+            if (postedJobs.length === 0) {
+                jobsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #999;">No jobs posted yet</p>';
+                return;
+            }
+
+            jobsGrid.innerHTML = postedJobs.map(job => {
+                const isEmergency = job.jobType === 'emergency';
+                return `
+                    <div class="posted-job-card" style="${isEmergency ? 'border-left: 5px solid #dc3545;' : ''}">
+                        <div class="job-header">
+                            <div class="job-title-section">
+                                <h3>${job.jobTitle}</h3>
+                                <span class="job-status-badge" style="${isEmergency ? 'background-color: #dc3545; color: white;' : ''}">${job.status} ${isEmergency ? '🚨 URGENT' : ''}</span>
+                            </div>
+                        </div>
+                        <div class="job-detail"><strong>Skill Required:</strong> ${job.requiredSkill}</div>
+                        <div class="job-detail"><strong>Location:</strong> ${job.location}</div>
+                        <div class="job-detail"><strong>Budget:</strong> Rs ${job.budget}</div>
+                        <div class="job-detail"><strong>Type:</strong> ${isEmergency ? 'Emergency' : job.jobType}</div>
+                        ${isEmergency ? `<div class="job-detail"><strong>Needed by:</strong> ${job.neededBy}</div>` : ''}
+                        <button class="job-action-btn" onclick="viewApplicants('${job.jobTitle}')">View Applicants</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setRating(rating) {
+            selectedRating = rating;
+            document.getElementById('ratingValue').value = rating;
+            document.querySelectorAll('.star').forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        function viewApplicants(jobTitle) {
+            alert(`Viewing applicants for "${jobTitle}"`);
+            console.log({
+                action: 'view_applicants',
+                job: jobTitle,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function hireWorker(workerName) {
+            alert(`Hire request sent to ${workerName}`);
+            console.log({
+                action: 'hire_worker',
+                worker: workerName,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                alert('Logged out successfully.');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('successModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuccessModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSuccessModal();
+            }
+        });
+    </script>
+</body>
+</html>

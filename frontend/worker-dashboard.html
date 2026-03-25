@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <title>Worker Dashboard - SkillBridge</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="security-utils.js"></script>
+    <script src="aadhaar-display.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // Check session on page load
+        if (!verifySession()) {
+            window.location.href = 'worker-login.html';
+        }
+        // Setup inactivity timer
+        setupInactivityTimer();
+    </script>
+    <style>
+        /* Dashboard specific styles */
+        .dashboard-navbar {
+            background-color: #007bff;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-nav-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .dashboard-logo {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+
+        .dashboard-site-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        /* Welcome section */
+        .welcome-section {
+            background-color: #007bff;
+            color: white;
+            padding: 4rem 2rem;
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Main container */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Skill Passport Card */
+        .passport-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .passport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .passport-title h2 {
+            color: #007bff;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .passport-id {
+            background-color: #f8f9fa;
+            color: #007bff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Section styles */
+        .passport-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            color: #007bff;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        /* Basic Info */
+        .basic-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            width: fit-content;
+        }
+
+        /* Skills Table */
+        .skills-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .skills-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .skills-table th {
+            padding: 1rem;
+            text-align: left;
+            color: #333;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .skills-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            color: #555;
+        }
+
+        .skill-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .skill-badge.verified {
+            background-color: #28a745;
+        }
+
+        .skill-badge.pending {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        /* Work History */
+        .work-item {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #007bff;
+        }
+
+        .work-item-title {
+            color: #007bff;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .work-item-detail {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .work-item-detail strong {
+            color: #333;
+        }
+
+        /* Ratings */
+        .ratings-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .rating-score {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stars {
+            color: #ffc107;
+            font-size: 1.3rem;
+            margin-right: 0.5rem;
+        }
+
+        .rating-comment {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Matched Jobs Section */
+        .jobs-section {
+            margin-top: 3rem;
+        }
+
+        .jobs-section h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .job-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .job-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .job-title {
+            color: #007bff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-company {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .job-details {
+            margin-bottom: 1rem;
+        }
+
+        .job-detail-item {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-detail-item strong {
+            color: #333;
+        }
+
+        .apply-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 0.6rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .apply-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Emergency Alert Banner */
+        .emergency-banner {
+            display: none;
+            background-color: #dc3545;
+            color: white;
+            padding: 1.5rem;
+            margin-top: 70px;
+            border-left: 5px solid #ff6b6b;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .emergency-banner.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .emergency-banner-icon {
+            font-size: 1.8rem;
+            animation: ring 0.5s infinite;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+
+        @keyframes ring {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 20% { transform: rotate(-15deg); }
+            30%, 50%, 70%, 90% { transform: rotate(15deg); }
+            40%, 60%, 80% { transform: rotate(-15deg); }
+        }
+
+        .emergency-banner-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .emergency-banner-details {
+            background-color: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .emergency-banner-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .emergency-banner-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .emergency-accept-btn,
+        .emergency-ignore-btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .emergency-accept-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .emergency-accept-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .emergency-ignore-btn {
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid white;
+        }
+
+        .emergency-ignore-btn:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        .notification-badge {
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            position: absolute;
+            right: -8px;
+            top: -8px;
+        }
+
+        /* Emergency Jobs Section */
+        .emergency-jobs-section {
+            margin-top: 3rem;
+            border: 3px solid #dc3545;
+            border-radius: 10px;
+            padding: 2rem;
+            background-color: #fff8f8;
+            display: none;
+        }
+
+        .emergency-jobs-section.show {
+            display: block;
+        }
+
+        .emergency-jobs-section h2 {
+            color: #dc3545;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .emergency-jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .emergency-job-card {
+            background-color: white;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .urgent-badge {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: #dc3545;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% {
+                opacity: 1;
+            }
+            25%, 75% {
+                opacity: 0.7;
+            }
+        }
+
+        .emergency-job-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .emergency-job-detail {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .emergency-job-detail-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .emergency-job-detail-value {
+            color: #666;
+        }
+
+        .emergency-job-contact {
+            background-color: #f0f0f0;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .emergency-job-contact-label {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .emergency-job-contact-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .accept-emergency-btn {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .accept-emergency-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        /* Blinking bell animation */
+        @keyframes ring {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            10%, 20% {
+                transform: rotate(15deg);
+            }
+            30%, 50%, 70%, 90% {
+                transform: rotate(-15deg);
+            }
+            40%, 60%, 80% {
+                transform: rotate(15deg);
+            }
+        }
+
+        .bell-ring {
+            display: inline-block;
+            animation: ring 0.5s infinite;
+            transform-origin: top center;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard-navbar {
+                padding: 1rem;
+            }
+
+            .dashboard-site-name {
+                font-size: 1.2rem;
+            }
+
+            .welcome-section {
+                padding: 2rem 1rem;
+                margin-top: 60px;
+            }
+
+            .welcome-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .passport-card {
+                padding: 1.5rem;
+            }
+
+            .basic-info {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+
+            .ratings-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .passport-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-navbar {
+                padding: 0.75rem;
+            }
+
+            .dashboard-logo {
+                font-size: 1.5rem;
+                margin-right: 0.5rem;
+            }
+
+            .dashboard-site-name {
+                font-size: 1rem;
+            }
+
+            .logout-btn {
+                padding: 0.4rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .welcome-section {
+                padding: 1.5rem 1rem;
+            }
+
+            .welcome-section h1 {
+                font-size: 1.5rem;
+            }
+
+            .welcome-section p {
+                font-size: 0.95rem;
+            }
+
+            .dashboard-container {
+                padding: 1rem;
+            }
+
+            .passport-card {
+                padding: 1rem;
+            }
+
+            .skills-table {
+                font-size: 0.9rem;
+            }
+
+            .skills-table th,
+            .skills-table td {
+                padding: 0.7rem;
+            }
+
+            .jobs-section h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="dashboard-navbar">
+        <div class="dashboard-nav-left">
+            <div class="dashboard-logo">🔗</div>
+            <div class="dashboard-site-name">SkillBridge</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="notificationContainer" style="display: none; font-size: 1.3rem; cursor: pointer;" onclick="scrollToEmergency()">
+                🔔<span class="notification-badge" id="alertCount">0</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Emergency Alert Banner (Top Alert) -->
+    <div id="emergencyAlertBanner" style="display: none; background-color: #dc3545; color: white; padding: 1.5rem 2rem; text-align: center; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);">
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+            <span class="bell-ring">🔔</span> <strong>🚨 URGENT JOB ALERT!</strong>
+        </div>
+        <p style="margin: 0.5rem 0 1rem 0; font-size: 1.1rem; opacity: 0.95;">New emergency job near you!</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <button onclick="scrollToEmergencyJobs()" style="background-color: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 0.7rem 1.5rem; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.3s;">View Emergency Job</button>
+            <button onclick="dismissEmergencyBanner()" style="background-color: rgba(255,255,255,0.1); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.3s;">Ignore</button>
+        </div>
+    </div>
+
+    <!-- Emergency Alert Banner (Original) -->
+    <div class="emergency-banner" id="emergencyBanner">
+        <div id="emergencyBannerContent"></div>
+    </div>
+
+    <!-- Welcome Section -->
+    <section class="welcome-section">
+        <h1 id="welcomeMessage">Welcome back!</h1>
+        <p>Your Skill Passport is ready</p>
+    </section>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+        <!-- Skill Passport Card -->
+        <div class="passport-card">
+            <!-- Header -->
+            <div class="passport-header">
+                <div class="passport-title">
+                    <h2>My Skill Passport</h2>
+                </div>
+                <div>
+                    <div class="passport-id" id="passportIdDisplay">Passport ID: SKILL-100</div>
+                    <div id="badgeInPassport" style="margin-top: 0.8rem;"></div>
+                </div>
+            </div>
+
+            <!-- Section 1: Basic Info -->
+            <div class="passport-section">
+                <h3 class="section-title">Basic Information</h3>
+                <div class="basic-info">
+                    <div class="info-item">
+                        <span class="info-label">Name</span>
+                        <span class="info-value" id="displayName">Name</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span class="status-badge">Available</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Location</span>
+                        <span class="info-value" id="displayLocation">Location</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value" id="displayPhone">Phone</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Gmail</span>
+                        <span class="info-value" id="displayEmail">Email</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Qualification</span>
+                        <span class="info-value" id="displayQualification">Qualification</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Verified Badge</span>
+                        <span class="info-value" id="verifiedBadgeDisplay">⏳ Test Pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Skills -->
+            <div class="passport-section">
+                <h3 class="section-title">Skills</h3>
+                <table class="skills-table">
+                    <thead>
+                        <tr>
+                            <th>Skill Name</th>
+                            <th>Level</th>
+                            <th>Badge</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="skillNameCell">Skill</td>
+                            <td id="skillLevelCell">Level</td>
+                            <td id="badgeCell"><span style="background:grey; color:white; padding:4px 10px; border-radius:12px;">⏳ Test Pending</span></td>
+                            <td><span class="skill-badge verified">Verified</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section 3: Work History -->
+            <div class="passport-section">
+                <h3 class="section-title">Work History</h3>
+                
+                <!-- Add Work History Form -->
+                <form id="workHistoryForm" style="margin-bottom: 2rem; padding: 1.5rem; background-color: #f8f9fa; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="jobTitle" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; font-size: 0.9rem;">Job Title</label>
+                            <input type="text" id="jobTitle" placeholder="e.g., House Wiring" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="employerName" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; font-size: 0.9rem;">Employer Name</label>
+                            <input type="text" id="employerName" placeholder="e.g., ABC Constructions" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="duration" style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; font-size: 0.9rem;">Duration</label>
+                            <input type="text" id="duration" placeholder="e.g., 2 months" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem;">
+                        </div>
+                    </div>
+                    <button type="submit" style="background-color: #007bff; color: white; padding: 0.6rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background-color 0.3s;">Add History</button>
+                </form>
+
+                <!-- Work History Table -->
+                <table class="skills-table">
+                    <thead>
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Employer</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workHistoryTableBody">
+                        <tr><td colspan="3" style="text-align: center; color: #999;">No work history added yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section 4: Ratings -->
+            <div class="passport-section">
+                <h3 class="section-title">Ratings</h3>
+                <div class="ratings-container">
+                    <div class="rating-score">
+                        <span class="stars">★★★★☆</span>
+                        <span>4.5 out of 5</span>
+                    </div>
+                    <div class="rating-comment">
+                        "Very skilled and punctual worker"
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; color: #999; font-size: 0.9rem;">
+                    <em>Note: Ratings will update after job completion</em>
+                </div>
+            </div>
+
+            <!-- Section 5: Identity Document (NEW) -->
+            <div class="passport-section">
+                <h3 class="section-title">🔐 Identity Document - Aadhaar Card</h3>
+                <div style="background-color: white; border-radius: 10px; padding: 2rem; text-align: center; border: 1px solid #e9ecef;">
+                    <div style="position: relative; width: 300px; height: 180px; margin: 0 auto; border: 3px solid #17a2b8; border-radius: 8px; overflow: hidden; background-color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <img id="aadhaarCardImage" src="" alt="Aadhaar Card" style="width: 100%; height: 100%; object-fit: cover; display: none;" oncontextmenu="return false" ondragstart="return false">
+                        <div id="aadhaarPlaceholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; color: #666;">Loading Aadhaar...</div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 2.5rem; color: rgba(23, 162, 184, 0.2); font-weight: bold; letter-spacing: 3px; white-space: nowrap; pointer-events: none;">VERIFIED</div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <span style="display: inline-flex; align-items: center; gap: 0.5rem; background-color: #d4edda; color: #155724; padding: 0.5rem 1rem; border-radius: 5px; font-weight: 600;">✓ Verified Identity</span>
+                    </div>
+                    <p style="color: #333; font-family: 'Courier New', monospace; font-weight: 600; margin: 1rem 0 0 0;" id="dashboardMaskedAadhaar">Aadhaar: XXXX XXXX 1234</p>
+                    <button class="action-btn" onclick="openAadhaarFullscreen()" style="margin-top: 1rem;">View Full Card</button>
+                </div>
+            </div>
+
+            <!-- Fullscreen Aadhaar Modal (NEW) -->
+            <div id="aadhaarFullscreenModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center;">
+                <div style="position: relative; max-width: 90%; max-height: 90%;">
+                    <button onclick="closeAadhaarFullscreen()" style="position: absolute; top: 20px; right: 20px; background-color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; z-index: 10000; display: flex; align-items: center; justify-content: center;">✕</button>
+                    <div style="position: relative; background-color: white; border-radius: 8px;">
+                        <img id="aadhaarFullscreenImage" src="" alt="Aadhaar Card Fullscreen" style="max-width: 100%; max-height: 100%; display: block; border-radius: 8px;" oncontextmenu="return false" ondragstart="return false">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 4rem; color: rgba(0, 0, 0, 0.1); font-weight: bold; letter-spacing: 4px; white-space: nowrap; pointer-events: none;">FOR SKILLBRIDGE USE ONLY</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6: QR Code -->
+            <div class="passport-section">
+                <h3 class="section-title">My Skill Passport QR Code</h3>
+                <div style="background-color: white; padding: 2rem; border-radius: 8px; border: 1px solid #e9ecef; text-align: center;">
+                    <p style="color: #666; margin-bottom: 1.5rem; font-weight: 500;">Scan to verify my skills</p>
+                    <div id="qrcode" style="display: flex; justify-content: center; margin: 1.5rem 0;"></div>
+                    <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;" id="qrPassportId">Passport ID: SKILL-100</p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="action-btn" onclick="downloadQRCode()" style="margin: 0;">Download QR Code</button>
+                        <button class="action-btn" onclick="shareQRCode()" style="margin: 0;">Share QR Code</button>
+                        <button class="action-btn" onclick="printPassport()" style="margin: 0;">Print Passport</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="addSkill()">Add Skill</button>
+                <a href="job-list.html" class="action-btn">View Jobs</a>
+                <a href="skill-map.html" class="action-btn">🗺️ View Skill Map</a>
+                <button class="action-btn" onclick="toggleEmergencyJobs()">🚨 Emergency Jobs</button>
+                <button class="action-btn" onclick="takeSkillTest()">🧪 Take Skill Assessment</button>
+                <button class="action-btn" onclick="editProfile()">Edit Profile</button>
+            </div>
+        </div>
+
+        <!-- Matched Jobs Section -->
+        <section class="jobs-section">
+            <h2>Matched Jobs Near You</h2>
+            <div class="jobs-grid" id="matchedJobsGrid">
+                <!-- Jobs will be populated by JavaScript based on skill -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Job database by skill
+        const jobsBySkill = {
+            'Electrician': [
+                { title: 'House Wiring', company: 'Kumar Constructions', location: 'Villupuram', budget: 'Rs 5000' },
+                { title: 'Shop Wiring', company: 'Sri Stores', location: 'Tindivanam', budget: 'Rs 3000' },
+                { title: 'Panel Installation', company: 'Power Systems Inc', location: 'Wallajah', budget: 'Rs 4500' }
+            ],
+            'Plumber': [
+                { title: 'Pipe Fixing', company: 'Raj House', location: 'Villupuram', budget: 'Rs 3000' },
+                { title: 'Bathroom Work', company: 'Sri Homes', location: 'Tindivanam', budget: 'Rs 2000' },
+                { title: 'Drainage System', company: 'Water Works Ltd', location: 'Wallajah', budget: 'Rs 5000' }
+            ],
+            'Mechanic': [
+                { title: 'Bike Repair', company: 'Speed Garage', location: 'Villupuram', budget: 'Rs 2000' },
+                { title: 'Car Service', company: 'City Motors', location: 'Tindivanam', budget: 'Rs 4000' },
+                { title: 'Engine Maintenance', company: 'Precision Motors', location: 'Wallajah', budget: 'Rs 3500' }
+            ],
+            'Carpenter': [
+                { title: 'Furniture Making', company: 'Wood Works Ltd', location: 'Villupuram', budget: 'Rs 6000' },
+                { title: 'Door Installation', company: 'Build Better', location: 'Tindivanam', budget: 'Rs 2500' },
+                { title: 'Cabinet Design', company: 'Interior Solutions', location: 'Wallajah', budget: 'Rs 5500' }
+            ],
+            'Tailor': [
+                { title: 'Custom Stitching', company: 'Fashion Hub', location: 'Villupuram', budget: 'Rs 1500' },
+                { title: 'Uniform Design', company: 'Uniforms Plus', location: 'Tindivanam', budget: 'Rs 3000' },
+                { title: 'Bridal Collection', company: 'Wedding Wear', location: 'Wallajah', budget: 'Rs 5000' }
+            ],
+            'Painter': [
+                { title: 'House Painting', company: 'Color Works', location: 'Villupuram', budget: 'Rs 4000' },
+                { title: 'Industrial Coating', company: 'Paint Masters', location: 'Tindivanam', budget: 'Rs 6000' },
+                { title: 'Wall Art', company: 'Creative Designs', location: 'Wallajah', budget: 'Rs 3500' }
+            ],
+            'Mason': [
+                { title: 'Wall Construction', company: 'Build Strong', location: 'Villupuram', budget: 'Rs 5500' },
+                { title: 'Foundation Work', company: 'Construction Pro', location: 'Tindivanam', budget: 'Rs 7000' },
+                { title: 'Floor Laying', company: 'Floor Experts', location: 'Wallajah', budget: 'Rs 4000' }
+            ],
+            'Other': [
+                { title: 'General Work', company: 'Local Business', location: 'Nearby', budget: 'Rs 2000' },
+                { title: 'Odd Jobs', company: 'Community Services', location: 'Local Area', budget: 'Rs 1500' },
+                { title: 'Helper Work', company: 'Various Employers', location: 'Nearby', budget: 'Rs 3000' }
+            ]
+        };
+
+        // ==================== AADHAAR DISPLAY FUNCTIONS ====================
+        function loadAadhaarCard() {
+            const aadhaarImage = localStorage.getItem('workerAadhaarImage');
+            const aadhaar = localStorage.getItem('workerAadhaar');
+            
+            if (aadhaarImage && aadhaar) {
+                const maskedAadhaar = 'XXXX XXXX ' + aadhaar.slice(-4);
+                document.getElementById('dashboardMaskedAadhaar').textContent = 'Aadhaar: ' + maskedAadhaar;
+                
+                const cardImage = document.getElementById('aadhaarCardImage');
+                cardImage.src = aadhaarImage;
+                cardImage.style.display = 'block';
+                document.getElementById('aadhaarPlaceholder').style.display = 'none';
+                
+                document.getElementById('aadhaarFullscreenImage').src = aadhaarImage;
+            } else {
+                document.getElementById('aadhaarPlaceholder').innerHTML = 'Aadhaar document not uploaded yet';
+            }
+        }
+
+        function openAadhaarFullscreen() {
+            const aadhaarImage = localStorage.getItem('workerAadhaarImage');
+            if (aadhaarImage) {
+                document.getElementById('aadhaarFullscreenModal').style.display = 'flex';
+            }
+        }
+
+        function closeAadhaarFullscreen() {
+            document.getElementById('aadhaarFullscreenModal').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAadhaarFullscreen();
+            }
+        });
+
+        // Load worker data from localStorage on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const workerName = localStorage.getItem('workerName') || 'Worker';
+            const workerEmail = localStorage.getItem('workerEmail') || 'worker@email.com';
+            const workerPhone = localStorage.getItem('workerPhone') || '9876543210';
+            const workerLocation = localStorage.getItem('workerLocation') || 'Location';
+            const workerSkill = localStorage.getItem('workerSkill') || 'Other';
+            const workerSkillLevel = localStorage.getItem('workerSkillLevel') || 'Beginner';
+            const workerQualification = localStorage.getItem('workerQualification') || 'Not specified';
+            const workerPassportId = localStorage.getItem('workerPassportId') || 'SKILL-100';
+            const workerBadge = localStorage.getItem('workerBadge') || null;
+
+            // Update welcome message
+            document.getElementById('welcomeMessage').textContent = `Welcome back, ${workerName}!`;
+
+            // Update Basic Information
+            document.getElementById('displayName').textContent = workerName;
+            document.getElementById('displayLocation').textContent = workerLocation;
+            document.getElementById('displayPhone').textContent = workerPhone;
+            document.getElementById('displayEmail').textContent = workerEmail;
+            document.getElementById('displayQualification').textContent = workerQualification;
+
+            // Update Passport ID
+            document.getElementById('passportIdDisplay').textContent = `Passport ID: ${workerPassportId}`;
+
+            // Get badge HTML based on workerBadge value
+            function getBadgeHTML(badge) {
+                if (badge === 'Expert') {
+                    return '<span style="background:green; color:white; padding:4px 10px; border-radius:12px;">⭐ Expert</span>';
+                } else if (badge === 'Intermediate') {
+                    return '<span style="background:orange; color:white; padding:4px 10px; border-radius:12px;">⚡ Intermediate</span>';
+                } else if (badge === 'Beginner') {
+                    return '<span style="background:red; color:white; padding:4px 10px; border-radius:12px;">🔰 Beginner</span>';
+                } else {
+                    return '<span style="background:grey; color:white; padding:4px 10px; border-radius:12px;">⏳ Test Pending</span>';
+                }
+            }
+
+            // Display badge in Skill Passport card (below Passport ID)
+            document.getElementById('badgeInPassport').innerHTML = '<strong style="color:#666; font-size:0.9rem;">Skill Level:</strong> ' + getBadgeHTML(workerBadge);
+
+            // Display badge in Basic Info section
+            document.getElementById('verifiedBadgeDisplay').innerHTML = getBadgeHTML(workerBadge);
+
+            // Display badge in Skills table
+            document.getElementById('badgeCell').innerHTML = getBadgeHTML(workerBadge);
+
+            // Update Skills Table
+            document.getElementById('skillNameCell').textContent = workerSkill;
+            document.getElementById('skillLevelCell').textContent = workerSkillLevel;
+
+            // Load work history from localStorage
+            loadWorkHistory();
+
+            // Populate matched jobs based on skill
+            displayMatchedJobs(workerSkill);
+
+            // Load Aadhaar card
+            loadAadhaarCard();
+
+            // Handle work history form submission
+            document.getElementById('workHistoryForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const jobTitle = document.getElementById('jobTitle').value.trim();
+                const employerName = document.getElementById('employerName').value.trim();
+                const duration = document.getElementById('duration').value.trim();
+
+                if (!jobTitle || !employerName || !duration) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+
+                // Add work history to localStorage
+                let workHistory = JSON.parse(localStorage.getItem('workHistory')) || [];
+                workHistory.push({ jobTitle, employerName, duration });
+                localStorage.setItem('workHistory', JSON.stringify(workHistory));
+
+                // Reload work history table
+                loadWorkHistory();
+
+                // Clear form
+                this.reset();
+            });
+
+            // Check and display emergency alerts
+            displayEmergencyAlerts();
+        });
+
+        function displayEmergencyAlerts() {
+            const emergencyJobs = JSON.parse(localStorage.getItem('emergencyJobs')) || [];
+            const banner = document.getElementById('emergencyBanner');
+            const bannerContent = document.getElementById('emergencyBannerContent');
+            const notificationContainer = document.getElementById('notificationContainer');
+            const alertCount = document.getElementById('alertCount');
+
+            if (emergencyJobs.length === 0) {
+                banner.classList.remove('show');
+                notificationContainer.style.display = 'none';
+                return;
+            }
+
+            // Show notification badge
+            notificationContainer.style.display = 'flex';
+            alertCount.textContent = emergencyJobs.length;
+
+            // Display first emergency job in banner
+            const firstJob = emergencyJobs[0];
+            bannerContent.innerHTML = `
+                <div class="emergency-banner-content">
+                    <span class="emergency-banner-icon">🔔</span>
+                    <div>
+                        <div class="emergency-banner-title">🚨 URGENT JOB ALERT! 🚨</div>
+                    </div>
+                </div>
+                <div class="emergency-banner-details">
+                    <div class="emergency-banner-detail-item">
+                        <strong>Job:</strong>
+                        <span>${firstJob.jobTitle}</span>
+                    </div>
+                    <div class="emergency-banner-detail-item">
+                        <strong>Skill Needed:</strong>
+                        <span>${firstJob.requiredSkill}</span>
+                    </div>
+                    <div class="emergency-banner-detail-item">
+                        <strong>Location:</strong>
+                        <span>${firstJob.location}</span>
+                    </div>
+                    <div class="emergency-banner-detail-item">
+                        <strong>Budget:</strong>
+                        <span>${firstJob.budget}</span>
+                    </div>
+                    <div class="emergency-banner-detail-item">
+                        <strong>Needed by:</strong>
+                        <span>${firstJob.neededBy}</span>
+                    </div>
+                </div>
+                <div class="emergency-banner-buttons">
+                    <button class="emergency-accept-btn" onclick="acceptEmergencyJob(${firstJob.id})">✓ Accept Job</button>
+                    <button class="emergency-ignore-btn" onclick="ignoreEmergencyJob(${firstJob.id})">Ignore</button>
+                </div>
+            `;
+
+            banner.classList.add('show');
+        }
+
+        function acceptEmergencyJob(jobId) {
+            alert('Job Accepted! The employer will contact you soon at your registered phone number.');
+            
+            // Remove from emergency jobs
+            let emergencyJobs = JSON.parse(localStorage.getItem('emergencyJobs')) || [];
+            emergencyJobs = emergencyJobs.filter(job => job.id !== jobId);
+            localStorage.setItem('emergencyJobs', JSON.stringify(emergencyJobs));
+
+            console.log({
+                action: 'emergency_job_accepted',
+                jobId: jobId,
+                timestamp: new Date().toISOString()
+            });
+
+            // Refresh alerts
+            displayEmergencyAlerts();
+        }
+
+        function ignoreEmergencyJob(jobId) {
+            // Remove from emergency jobs
+            let emergencyJobs = JSON.parse(localStorage.getItem('emergencyJobs')) || [];
+            emergencyJobs = emergencyJobs.filter(job => job.id !== jobId);
+            localStorage.setItem('emergencyJobs', JSON.stringify(emergencyJobs));
+
+            console.log({
+                action: 'emergency_job_ignored',
+                jobId: jobId,
+                timestamp: new Date().toISOString()
+            });
+
+            // Refresh alerts
+            displayEmergencyAlerts();
+        }
+
+        function scrollToEmergency() {
+            document.getElementById('emergencyBanner').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function loadWorkHistory() {
+            const workHistory = JSON.parse(localStorage.getItem('workHistory')) || [];
+            const tableBody = document.getElementById('workHistoryTableBody');
+            tableBody.innerHTML = '';
+
+            if (workHistory.length > 0) {
+                workHistory.forEach(item => {
+                    const row = `
+                        <tr>
+                            <td>${item.jobTitle}</td>
+                            <td>${item.employerName}</td>
+                            <td>${item.duration}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">No work history added yet</td></tr>';
+            }
+        }
+
+        function displayMatchedJobs(skill) {
+            const matchedJobsGrid = document.getElementById('matchedJobsGrid');
+            const jobs = jobsBySkill[skill] || jobsBySkill['Other'];
+
+            matchedJobsGrid.innerHTML = jobs.map((job, index) => `
+                <div class="job-card">
+                    <div class="job-title">${job.title}</div>
+                    <div class="job-company">${job.company}</div>
+                    <div class="job-details">
+                        <div class="job-detail-item"><strong>Location:</strong> ${job.location}</div>
+                        <div class="job-detail-item"><strong>Budget:</strong> ${job.budget}</div>
+                    </div>
+                    <button class="apply-btn" onclick="applyForJob('${job.title}')">Apply Now</button>
+                </div>
+            `).join('');
+        }
+
+        function applyForJob(jobTitle) {
+            alert(`Application submitted for "${jobTitle}"`);
+            console.log({
+                action: 'job_application',
+                job: jobTitle,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                console.log({
+                    action: 'logout',
+                    timestamp: new Date().toISOString()
+                });
+                alert('Logged out successfully.');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function addSkill() {
+            alert('Add Skill functionality - Coming soon!');
+        }
+
+        function editProfile() {
+            alert('Edit Profile functionality - Coming soon!');
+        }
+
+        function takeSkillTest() {
+            const workerBadge = localStorage.getItem('workerBadge');
+            if (workerBadge && workerBadge !== 'Pending') {
+                if (!confirm('You already have a skill badge. Do you still want to retake the assessment?')) {
+                    return;
+                }
+            }
+            window.location.href = 'skill-test.html';
+        }
+
+        // QR Code Functions
+        function generateQRCode() {
+            const workerName = localStorage.getItem('workerName') || 'Worker';
+            const workerPassportId = localStorage.getItem('workerPassportId') || 'SKILL-100';
+            const workerSkill = localStorage.getItem('workerSkill') || 'Other';
+            const workerSkillLevel = localStorage.getItem('workerSkillLevel') || 'Beginner';
+            const workerLocation = localStorage.getItem('workerLocation') || 'Location';
+            const workerBadge = 'Verified';
+
+            // Clear previous QR code
+            document.getElementById('qrcode').innerHTML = '';
+
+            // Generate QR data
+            const qrData = "SkillBridge Passport" +
+                "\nName: " + workerName +
+                "\nID: " + workerPassportId +
+                "\nSkill: " + workerSkill +
+                "\nLevel: " + workerSkillLevel +
+                "\nLocation: " + workerLocation +
+                "\nBadge: " + workerBadge +
+                "\nVerified by SkillBridge";
+
+            // Create QR code
+            const qrcode = new QRCode(document.getElementById("qrcode"), {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: "#0066cc",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Update passport ID display
+            document.getElementById('qrPassportId').textContent = `Passport ID: ${workerPassportId}`;
+        }
+
+        function downloadQRCode() {
+            const workerPassportId = localStorage.getItem('workerPassportId') || 'SKILL-100';
+            
+            // Get canvas from QR code
+            const canvas = document.querySelector('#qrcode canvas');
+            if (!canvas) {
+                alert('QR Code not generated yet!');
+                return;
+            }
+
+            // Create download link
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `SkillPassport-${workerPassportId}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function shareQRCode() {
+            const workerName = localStorage.getItem('workerName') || 'Worker';
+            const workerPassportId = localStorage.getItem('workerPassportId') || 'SKILL-100';
+            
+            const shareText = `Check out my SkillBridge Passport! ID: ${workerPassportId} - ${workerName}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'SkillBridge Passport',
+                    text: shareText,
+                    url: window.location.href
+                }).catch(err => console.log('Share failed:', err));
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(shareText).then(() => {
+                    alert('Passport details copied to clipboard!');
+                }).catch(err => {
+                    alert('Share text: ' + shareText);
+                });
+            }
+        }
+
+        function printPassport() {
+            window.print();
+        }
+
+        // Generate QR code on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                generateQRCode();
+            }, 500);
+        }, { once: true });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <title>Skill Assessment Test - SkillBridge</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="security-utils.js"></script>
+    <style>
+        .navbar { background-color: #007bff; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .navbar-left { display: flex; align-items: center; gap: 0.5rem; }
+        .navbar-logo { font-size: 1.8rem; }
+        .navbar-title { font-size: 1.2rem; font-weight: bold; }
+        .logout-btn { background-color: rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: background-color 0.3s; }
+        .logout-btn:hover { background-color: rgba(255,255,255,0.3); }
+        .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 30px 40px; margin-top: 80px; }
+        .step { display: none; width: 100%; max-width: 1000px; margin: 20px auto; padding: 40px; background-color: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .step.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .step h1 { color: #007bff; font-size: 2rem; margin-bottom: 0.5rem; }
+        .step-subtext { color: #666; font-size: 1.1rem; margin-bottom: 2rem; }
+        .warning-box { width: 100%; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 2rem; color: #333; line-height: 1.6; font-size: 15px; }
+        .warning-box strong { color: #ff6b6b; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.7rem; font-weight: 600; color: #333; }
+        .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        .btn { width: 100%; background-color: #007bff; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 18px; transition: background-color 0.3s, transform 0.2s; }
+        .btn:hover { background-color: #0056b3; transform: translateY(-2px); }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        .camera-section { background-color: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; padding: 2rem; text-align: center; margin-bottom: 2rem; }
+        #videoElement { width: 300px; height: 220px; background-color: #000; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .camera-status { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; font-weight: 600; }
+        .camera-dot { width: 12px; height: 12px; background-color: #28a745; border-radius: 50%; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .progress-bar { background-color: #e9ecef; height: 8px; border-radius: 4px; margin-bottom: 1rem; overflow: hidden; }
+        .progress-fill { background-color: #007bff; height: 100%; transition: width 0.3s; }
+        .progress-text { color: #666; font-size: 0.9rem; margin-bottom: 1rem; display: flex; justify-content: space-between; }
+        .timer { background-color: #fff3cd; color: #ff6b6b; padding: 0.5rem 1rem; border-radius: 5px; font-weight: 700; }
+        .question-text { color: #333; font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; }
+        .answer-options { display: grid; gap: 1rem; margin-bottom: 2rem; }
+        .answer-option { width: 100%; background-color: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; padding: 12px 20px; cursor: pointer; transition: all 0.3s; text-align: left; font-weight: 500; }
+        .answer-option:hover { background-color: #e9ecef; border-color: #007bff; }
+        .answer-option.selected { background-color: #007bff; color: white; border-color: #007bff; }
+        .result-section { text-align: center; padding: 2rem; }
+        .score-display { font-size: 3rem; font-weight: bold; color: #007bff; margin-bottom: 1rem; }
+        .badge { display: inline-block; padding: 1rem 2rem; border-radius: 10px; font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 2rem; }
+        .badge-expert { background-color: #28a745; }
+        .badge-intermediate { background-color: #ffc107; color: #333; }
+        .badge-beginner { background-color: #dc3545; }
+        .result-message { color: #666; font-size: 1.1rem; margin-bottom: 2rem; }
+        .security-warning-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border: 5px solid #dc3545; border-radius: 15px; padding: 3rem; text-align: center; z-index: 10000; box-shadow: 0 10px 50px rgba(0,0,0,0.5); max-width: 500px; }
+        .security-warning-popup h2 { color: #dc3545; font-size: 2rem; margin-bottom: 1rem; }
+        .security-warning-popup p { color: #333; font-size: 1.2rem; line-height: 1.8; }
+        .security-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 9999; }
+        .security-badge { position: fixed; top: 100px; right: 20px; background-color: #fff3cd; border: 2px solid #ffc107; color: #333; padding: 10px 15px; border-radius: 8px; font-weight: 700; z-index: 500; font-size: 0.9rem; }
+        @media (max-width: 768px) { .container { padding: 1rem; margin-top: 70px; } .step { padding: 1.5rem; } .step h1 { font-size: 1.5rem; } .navbar { flex-direction: column; gap: 0.5rem; padding: 0.8rem 1rem; } .score-display { font-size: 2rem; } #videoElement { max-width: 300px; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <span class="navbar-logo">🏢</span>
+            <span class="navbar-title">SkillBridge</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="container">
+        <!-- Identity Verification Step (NEW) -->
+        <div class="step active" id="identityStep">
+            <h1>Identity Verification</h1>
+            <p class="step-subtext">Verify your identity before taking the test</p>
+            <div style="background-color: white; border-radius: 10px; padding: 2rem; text-align: center; max-width: 500px; margin: 0 auto;">
+                <div style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 2px solid #e9ecef;">
+                    <h3 style="color: #333; margin: 0 0 0.5rem 0;" id="identityWorkerName">Loading...</h3>
+                    <p style="color: #666; margin: 0; font-family: 'Courier New', monospace; font-weight: 600;" id="identityMaskedAadhaar">XXXX XXXX XXXX</p>
+                </div>
+                <div style="margin-bottom: 2rem; background-color: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; padding: 2rem;">
+                    <video id="identityVideoElement" autoplay playsinline style="width: 100%; max-width: 300px; height: 220px; background-color: #000; border-radius: 8px; margin-bottom: 1rem;"></video>
+                    <p style="color: #666; margin: 0; font-weight: 500;">📷 Please look at the camera to verify your identity</p>
+                </div>
+                <button class="btn btn-success" onclick="verifyAndStartTest()" style="width: 100%;">Verify and Start Test</button>
+            </div>
+        </div>
+
+        <div class="step" id="step1">
+            <h1>Skill Assessment Test</h1>
+            <p class="step-subtext">Prove your skills and get verified</p>
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong><br>
+                Camera will turn ON during test<br>
+                We do NOT record or store any video<br>
+                Camera is only used for monitoring
+            </div>
+            <div class="form-group">
+                <label for="skillSelect">Select Your Skill *</label>
+                <select id="skillSelect" required>
+                    <option value="">-- Select a Skill --</option>
+                    <option value="Electrician">Electrician</option>
+                    <option value="Plumber">Plumber</option>
+                    <option value="Mechanic">Mechanic</option>
+                    <option value="Carpenter">Carpenter</option>
+                    <option value="IT/Coding">IT/Coding</option>
+                    <option value="Tailor">Tailor</option>
+                    <option value="Painter">Painter</option>
+                    <option value="Mason">Mason</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="levelSelect">Select Your Level *</label>
+                <select id="levelSelect" required>
+                    <option value="">-- Select a Level --</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Expert">Expert</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="startTest()" style="width: 100%;">Start Test with Camera</button>
+        </div>
+
+        <div class="step" id="step2">
+            <h1>Camera Check</h1>
+            <p class="step-subtext">Please allow camera access for verification</p>
+            <div class="camera-section">
+                <video id="videoElement" autoplay playsinline></video>
+                <div class="camera-status">
+                    <div class="camera-dot"></div>
+                    <span>Camera is ON</span>
+                </div>
+                <p style="color: #666; margin-bottom: 2rem;">Your video is NOT recorded</p>
+                <button class="btn btn-success" onclick="startQuestions()" style="width: 100%;">I am Ready - Start Questions</button>
+            </div>
+        </div>
+
+        <div class="step" id="step3">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-text">
+                <span id="questionNumber">Question 1 of 5</span>
+                <span class="timer" id="timer">60s</span>
+            </div>
+            <h2 class="question-text" id="questionText"></h2>
+            <div class="answer-options" id="answerOptions"></div>
+            <button class="btn" id="nextBtn" onclick="nextQuestion()" style="width: 100%;">Next Question</button>
+        </div>
+
+        <div class="step" id="step4">
+            <div class="result-section">
+                <h1>Test Complete! 🎉</h1>
+                <div class="score-display" id="scoreDisplay">0/5</div>
+                <div id="badgeDisplay"></div>
+                <div class="result-message" id="resultMessage"></div>
+                <a href="worker-dashboard.html" class="btn btn-success" style="display: inline-block; text-decoration: none;">Go to My Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== IDENTITY VERIFICATION ====================
+        function initializeIdentityVerification() {
+            const workerName = localStorage.getItem('workerName') || 'Worker';
+            const aadhaar = localStorage.getItem('workerAadhaar') || '000000000000';
+            const maskedAadhaar = 'XXXX XXXX ' + aadhaar.slice(-4);
+            
+            document.getElementById('identityWorkerName').textContent = workerName;
+            document.getElementById('identityMaskedAadhaar').textContent = maskedAadhaar;
+            
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function(mediaStream) {
+                stream = mediaStream;
+                document.getElementById('identityVideoElement').srcObject = mediaStream;
+            }).catch(function(error) {
+                alert('Please allow camera access to verify identity');
+            });
+        }
+
+        function verifyAndStartTest() {
+            showStep(1);
+        }
+
+        const questionsDatabase = {
+            'Electrician': {
+                'Beginner': [
+                    { q: 'What does electricity mean?', options: ['Flow of water', 'Flow of current', 'Flow of air', 'None'], answer: 1 },
+                    { q: 'What is a switch used for?', options: ['Generate power', 'Stop and start current', 'Store power', 'Measure power'], answer: 1 },
+                    { q: 'What color wire is neutral?', options: ['Red', 'Green', 'Black', 'Blue'], answer: 2 },
+                    { q: 'What is a fuse used for?', options: ['Generate electricity', 'Protect circuit from overflow', 'Measure voltage', 'Store current'], answer: 1 },
+                    { q: 'Which is an insulator?', options: ['Copper', 'Iron', 'Rubber', 'Aluminium'], answer: 2 },
+                    { q: 'What is a plug used for?', options: ['Connect device to power', 'Store electricity', 'Measure current', 'None'], answer: 0 },
+                    { q: 'What is a circuit?', options: ['Straight wire', 'Closed path for current', 'Open wire', 'None'], answer: 1 },
+                    { q: 'What does LED stand for?', options: ['Light Emitting Diode', 'Low Energy Device', 'Light Energy Display', 'None'], answer: 0 }
+                ],
+                'Intermediate': [
+                    { q: 'Safe voltage for home wiring?', options: ['110V', '220V', '440V', '550V'], answer: 1 },
+                    { q: 'Which wire is used for earthing?', options: ['Red', 'Black', 'Green', 'Yellow'], answer: 2 },
+                    { q: 'What tool measures current?', options: ['Voltmeter', 'Ammeter', 'Ohmmeter', 'Thermometer'], answer: 1 },
+                    { q: 'What does MCB stand for?', options: ['Main Circuit Breaker', 'Miniature Circuit Breaker', 'Mini Cable Box', 'Main Cable Board'], answer: 1 },
+                    { q: 'Best material for wiring?', options: ['Iron', 'Copper', 'Aluminium', 'Both b&c'], answer: 3 },
+                    { q: 'What is a transformer used for?', options: ['Generate power', 'Change voltage levels', 'Store power', 'Measure power'], answer: 1 },
+                    { q: 'What is short circuit?', options: ['Long wire', 'Unintended low resistance path', 'Broken wire', 'None'], answer: 1 },
+                    { q: 'Unit of resistance?', options: ['Volt', 'Ampere', 'Ohm', 'Watt'], answer: 2 }
+                ],
+                'Expert': [
+                    { q: 'Formula for electrical power?', options: ['P=VI', 'P=V/I', 'P=I/V', 'P=V+I'], answer: 0 },
+                    { q: 'What is 3 phase connection for?', options: ['Home lighting', 'Heavy industrial machines', 'Small appliances', 'Street lights'], answer: 1 },
+                    { q: 'Resistance of good earth?', options: ['Less than 1 ohm', '5 ohm', '10 ohm', '100 ohm'], answer: 0 },
+                    { q: 'What is ELCB?', options: ['Earth Leakage Circuit Breaker', 'Electric Load Circuit Box', 'Earth Line Control Board', 'Electric Line Circuit Breaker'], answer: 0 },
+                    { q: 'What causes motor overheating?', options: ['Low voltage', 'Overload', 'Poor ventilation', 'All of above'], answer: 3 },
+                    { q: 'What is power factor?', options: ['Ratio of real to apparent power', 'Ratio of voltage to current', 'Total power consumed', 'None'], answer: 0 },
+                    { q: 'What is a VFD?', options: ['Variable Frequency Drive', 'Voltage Frequency Device', 'Variable Flow Drive', 'None'], answer: 0 },
+                    { q: 'What is corona effect?', options: ['Ionization of air around conductor', 'Short circuit', 'Overload', 'None'], answer: 0 }
+                ]
+            },
+            'Plumber': {
+                'Beginner': [
+                    { q: 'What is a pipe used for?', options: ['Carry water', 'Store water', 'Heat water', 'Cool water'], answer: 0 },
+                    { q: 'What is a tap used for?', options: ['Store water', 'Control water flow', 'Heat water', 'Filter water'], answer: 1 },
+                    { q: 'What is PVC?', options: ['Metal pipe', 'Plastic pipe', 'Iron pipe', 'Copper pipe'], answer: 1 },
+                    { q: 'What causes pipe leakage?', options: ['High pressure', 'Cracks in pipe', 'Old pipes', 'All of above'], answer: 3 },
+                    { q: 'What tool cuts pipes?', options: ['Hammer', 'Hacksaw', 'Screwdriver', 'Plier'], answer: 1 },
+                    { q: 'What is a valve?', options: ['Controls water flow', 'Stores water', 'Heats water', 'None'], answer: 0 },
+                    { q: 'What is a water meter?', options: ['Measures water usage', 'Controls flow', 'Stores water', 'None'], answer: 0 },
+                    { q: 'What is a drain used for?', options: ['Supply water', 'Remove waste water', 'Store water', 'None'], answer: 1 }
+                ],
+                'Intermediate': [
+                    { q: 'What is a pipe used for?', options: ['Carry water', 'Store water', 'Heat water', 'Cool water'], answer: 0 },
+                    { q: 'What is a tap used for?', options: ['Store water', 'Control water flow', 'Heat water', 'Filter water'], answer: 1 },
+                    { q: 'What is PVC?', options: ['Metal pipe', 'Plastic pipe', 'Iron pipe', 'Copper pipe'], answer: 1 },
+                    { q: 'What causes pipe leakage?', options: ['High pressure', 'Cracks in pipe', 'Old pipes', 'All of above'], answer: 3 },
+                    { q: 'What tool cuts pipes?', options: ['Hammer', 'Hacksaw', 'Screwdriver', 'Plier'], answer: 1 },
+                    { q: 'What is a valve?', options: ['Controls water flow', 'Stores water', 'Heats water', 'None'], answer: 0 },
+                    { q: 'What is a water meter?', options: ['Measures water usage', 'Controls flow', 'Stores water', 'None'], answer: 0 },
+                    { q: 'What is a drain used for?', options: ['Supply water', 'Remove waste water', 'Store water', 'None'], answer: 1 }
+                ],
+                'Expert': [
+                    { q: 'What is a pipe used for?', options: ['Carry water', 'Store water', 'Heat water', 'Cool water'], answer: 0 },
+                    { q: 'What is a tap used for?', options: ['Store water', 'Control water flow', 'Heat water', 'Filter water'], answer: 1 },
+                    { q: 'What is PVC?', options: ['Metal pipe', 'Plastic pipe', 'Iron pipe', 'Copper pipe'], answer: 1 },
+                    { q: 'What causes pipe leakage?', options: ['High pressure', 'Cracks in pipe', 'Old pipes', 'All of above'], answer: 3 },
+                    { q: 'What tool cuts pipes?', options: ['Hammer', 'Hacksaw', 'Screwdriver', 'Plier'], answer: 1 },
+                    { q: 'What is a valve?', options: ['Controls water flow', 'Stores water', 'Heats water', 'None'], answer: 0 },
+                    { q: 'What is a water meter?', options: ['Measures water usage', 'Controls flow', 'Stores water', 'None'], answer: 0 },
+                    { q: 'What is a drain used for?', options: ['Supply water', 'Remove waste water', 'Store water', 'None'], answer: 1 }
+                ]
+            },
+            'IT/Coding': {
+                'Beginner': [
+                    { q: 'What does HTML stand for?', options: ['Hyper Text Markup Language', 'High Text Machine Language', 'Hyper Transfer Markup Language', 'None'], answer: 0 },
+                    { q: 'Which language styles webpage?', options: ['HTML', 'CSS', 'JavaScript', 'Python'], answer: 1 },
+                    { q: 'What is a variable?', options: ['Fixed value', 'Container to store data', 'A function', 'A loop'], answer: 1 },
+                    { q: 'What does CPU stand for?', options: ['Central Processing Unit', 'Computer Processing Unit', 'Central Program Unit', 'None'], answer: 0 },
+                    { q: 'What is a browser?', options: ['Search engine', 'Software to access internet', 'Programming language', 'Database'], answer: 1 },
+                    { q: 'What does www stand for?', options: ['World Wide Web', 'World Web Wide', 'Wide World Web', 'None'], answer: 0 },
+                    { q: 'What is RAM?', options: ['Read Access Memory', 'Random Access Memory', 'Read All Memory', 'None'], answer: 1 },
+                    { q: 'What is an email?', options: ['Electronic message', 'Phone call', 'Letter', 'None'], answer: 0 }
+                ],
+                'Intermediate': [
+                    { q: 'What does API stand for?', options: ['Application Programming Interface', 'Applied Program Integration', 'Automatic Program Interface', 'None'], answer: 0 },
+                    { q: 'What is a database?', options: ['Design tool', 'Store and manage data', 'Programming language', 'Test tool'], answer: 1 },
+                    { q: 'What is responsive design?', options: ['Fast loading website', 'Website works on all screen sizes', 'Secure website', 'Animated website'], answer: 1 },
+                    { q: 'What is Git used for?', options: ['Design websites', 'Version control', 'Database management', 'Testing'], answer: 1 },
+                    { q: 'What is a loop?', options: ['A variable', 'Repeat a block of code', 'A function', 'A condition'], answer: 1 },
+                    { q: 'What is JSON?', options: ['Java Source Object Notation', 'JavaScript Object Notation', 'Java Script Open Network', 'None'], answer: 1 },
+                    { q: 'What is HTTP?', options: ['Hyper Text Transfer Protocol', 'High Text Transfer Protocol', 'Hyper Transfer Text Protocol', 'None'], answer: 0 },
+                    { q: 'What is debugging?', options: ['Adding bugs', 'Finding and fixing errors', 'Writing code', 'Testing'], answer: 1 }
+                ],
+                'Expert': [
+                    { q: 'What is time complexity?', options: ['How long code takes to run', 'How much memory code uses', 'How many lines of code', 'How fast internet is'], answer: 0 },
+                    { q: 'What is REST API?', options: ['A database', 'Architectural style for APIs', 'Programming language', 'Testing tool'], answer: 1 },
+                    { q: 'What is Docker?', options: ['Design UI', 'Containerize applications', 'Manage database', 'Test code'], answer: 1 },
+                    { q: 'What is binary search?', options: ['Search from beginning', 'Search by dividing array in half', 'Random search', 'None'], answer: 1 },
+                    { q: 'What is Big O notation?', options: ['Algorithm efficiency measurement', 'Database size', 'Code length', 'None'], answer: 0 },
+                    { q: 'What is CI/CD?', options: ['Continuous Integration/Continuous Deployment', 'Code Integration/Code Deployment', 'Computer Integration', 'None'], answer: 0 },
+                    { q: 'What is load balancing?', options: ['Distribute network traffic across servers', 'Balance database', 'Balance UI', 'None'], answer: 0 },
+                    { q: 'What is a deadlock?', options: ['Broken code', 'Two processes waiting for each other', 'Memory overflow', 'None'], answer: 1 }
+                ]
+            },
+            'General': {
+                'Beginner': [
+                    { q: 'Years of experience?', options: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years'], answer: 0 },
+                    { q: 'Do you have certificates?', options: ['Yes government', 'Yes private', 'No but experienced', 'Currently learning'], answer: 0 },
+                    { q: 'Can you work independently?', options: ['Yes completely', 'Yes with guidance', 'Need supervision', 'Still learning'], answer: 1 },
+                    { q: 'Do you have your own tools?', options: ['Yes all', 'Yes some', 'No but can arrange', 'No'], answer: 1 },
+                    { q: 'Available for emergency work?', options: ['Yes anytime', 'Yes on weekdays', 'Yes on weekends', 'No'], answer: 0 },
+                    { q: 'Have you done big projects?', options: ['Yes many', 'Yes few', 'Only small ones', 'No'], answer: 1 },
+                    { q: 'Do you have references?', options: ['Yes many', 'Yes few', 'No but can get', 'No'], answer: 1 },
+                    { q: 'Willing to travel for work?', options: ['Yes anywhere', 'Yes nearby', 'Only local', 'No'], answer: 1 }
+                ],
+                'Intermediate': [
+                    { q: 'Years of experience?', options: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years'], answer: 1 },
+                    { q: 'Do you have certificates?', options: ['Yes government', 'Yes private', 'No but experienced', 'Currently learning'], answer: 0 },
+                    { q: 'Can you work independently?', options: ['Yes completely', 'Yes with guidance', 'Need supervision', 'Still learning'], answer: 0 },
+                    { q: 'Do you have your own tools?', options: ['Yes all', 'Yes some', 'No but can arrange', 'No'], answer: 0 },
+                    { q: 'Available for emergency work?', options: ['Yes anytime', 'Yes on weekdays', 'Yes on weekends', 'No'], answer: 0 },
+                    { q: 'Have you done big projects?', options: ['Yes many', 'Yes few', 'Only small ones', 'No'], answer: 1 },
+                    { q: 'Do you have references?', options: ['Yes many', 'Yes few', 'No but can get', 'No'], answer: 0 },
+                    { q: 'Willing to travel for work?', options: ['Yes anywhere', 'Yes nearby', 'Only local', 'No'], answer: 0 }
+                ],
+                'Expert': [
+                    { q: 'Years of experience?', options: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years'], answer: 3 },
+                    { q: 'Do you have certificates?', options: ['Yes government', 'Yes private', 'No but experienced', 'Currently learning'], answer: 0 },
+                    { q: 'Can you work independently?', options: ['Yes completely', 'Yes with guidance', 'Need supervision', 'Still learning'], answer: 0 },
+                    { q: 'Do you have your own tools?', options: ['Yes all', 'Yes some', 'No but can arrange', 'No'], answer: 0 },
+                    { q: 'Available for emergency work?', options: ['Yes anytime', 'Yes on weekdays', 'Yes on weekends', 'No'], answer: 0 },
+                    { q: 'Have you done big projects?', options: ['Yes many', 'Yes few', 'Only small ones', 'No'], answer: 0 },
+                    { q: 'Do you have references?', options: ['Yes many', 'Yes few', 'No but can get', 'No'], answer: 0 },
+                    { q: 'Willing to travel for work?', options: ['Yes anywhere', 'Yes nearby', 'Only local', 'No'], answer: 0 }
+                ]
+            }
+        };
+
+        let selectedSkill = '', selectedLevel = '', currentQuestions = [], currentQuestion = 0, score = 0, selectedAnswers = [], stream = null, timerInterval = null, timeLeft = 60;
+        let testActive = false, warningCount = 0, tabSwitchTimeout = null;
+
+        function startTest() {
+            selectedSkill = document.getElementById('skillSelect').value;
+            selectedLevel = document.getElementById('levelSelect').value;
+            if (!selectedSkill || !selectedLevel) { alert('Please select both skill and level'); return; }
+            selectedAnswers = new Array(5).fill(-1);
+            showStep(2);
+            startCamera();
+        }
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function(mediaStream) {
+                stream = mediaStream;
+                document.getElementById('videoElement').srcObject = mediaStream;
+                document.getElementById('videoElement').style.display = 'block';
+            }).catch(function(error) {
+                alert('Please allow camera access to take the test');
+                showStep(1);
+            });
+        }
+
+        function startQuestions() {
+            testActive = true;
+            warningCount = 0;
+            showSecurityBadge();
+            activateSecurityFeatures();
+            showStep(3);
+            
+            const skillKey = ['Electrician', 'Plumber', 'IT/Coding'].includes(selectedSkill) ? selectedSkill : 'General';
+            const allQuestions = questionsDatabase[skillKey][selectedLevel];
+            
+            currentQuestions = shuffleArray(allQuestions).slice(0, 5);
+            currentQuestion = 0;
+            score = 0;
+            
+            displayQuestion();
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function displayQuestion() {
+            if (currentQuestion >= 5) { showResult(); return; }
+            const question = currentQuestions[currentQuestion];
+            document.getElementById('questionText').textContent = question.q;
+            document.getElementById('questionNumber').textContent = `Question ${currentQuestion + 1} of 5`;
+            const progress = ((currentQuestion + 1) / 5) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            const optionsHTML = question.options.map((option, index) => {
+                const selected = selectedAnswers[currentQuestion] === index ? 'selected' : '';
+                return `<div class="answer-option ${selected}" onclick="selectAnswer(${index})">${String.fromCharCode(97 + index)}) ${option}</div>`;
+            }).join('');
+            document.getElementById('answerOptions').innerHTML = optionsHTML;
+            clearInterval(timerInterval);
+            timeLeft = 60;
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            document.getElementById('timer').textContent = timeLeft + 's';
+            timeLeft--;
+            if (timeLeft < 0) { clearInterval(timerInterval); nextQuestion(); }
+        }
+
+        function selectAnswer(index) {
+            selectedAnswers[currentQuestion] = index;
+            const options = document.querySelectorAll('.answer-option');
+            options.forEach((opt, i) => {
+                if (i === index) { opt.classList.add('selected'); } else { opt.classList.remove('selected'); }
+            });
+        }
+
+        function nextQuestion() {
+            clearInterval(timerInterval);
+            if (selectedAnswers[currentQuestion] === currentQuestions[currentQuestion].answer) { score++; }
+            currentQuestion++;
+            if (currentQuestion < 5) { displayQuestion(); } else { showResult(); }
+        }
+
+        function showResult() {
+            clearInterval(timerInterval);
+            testActive = false;
+            deactivateSecurityFeatures();
+            stopCamera();
+            showStep(4);
+
+            let badge = 'Beginner';
+            if (score >= 4) { badge = 'Expert'; } else if (score === 3) { badge = 'Intermediate'; }
+            localStorage.setItem('workerBadge', badge);
+
+            document.getElementById('scoreDisplay').textContent = score + '/5';
+            
+            let badgeHTML = '';
+            if (score >= 4) { badgeHTML = '<div class="badge badge-expert">✅ Expert Certified</div>'; } 
+            else if (score === 3) { badgeHTML = '<div class="badge badge-intermediate">⭐ Intermediate</div>'; } 
+            else { badgeHTML = '<div class="badge badge-beginner">🔴 Beginner</div>'; }
+            document.getElementById('badgeDisplay').innerHTML = badgeHTML;
+            
+            document.getElementById('resultMessage').textContent = `You are certified as ${badge}! Your test has been saved.`;
+        }
+
+        function stopCamera() {
+            if (stream) { stream.getTracks().forEach(track => track.stop()); }
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            if (step === 'identityStep') {
+                document.getElementById('identityStep').classList.add('active');
+            } else {
+                document.getElementById('step' + step).classList.add('active');
+            }
+        }
+
+        function logout() {
+            testActive = false;
+            deactivateSecurityFeatures();
+            stopCamera();
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // ANTI-CHEATING SECURITY FEATURES
+        function showSecurityBadge() {
+            let badge = document.getElementById('securityBadge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'securityBadge';
+                badge.className = 'security-badge';
+                document.body.appendChild(badge);
+            }
+            updateWarningBadge();
+        }
+
+        function updateWarningBadge() {
+            const badge = document.getElementById('securityBadge');
+            if (badge) {
+                badge.textContent = `⚠️ Warnings: ${warningCount}/2`;
+            }
+        }
+
+        function showSecurityWarning(title, message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'security-overlay';
+            
+            const popup = document.createElement('div');
+            popup.className = 'security-warning-popup';
+            popup.innerHTML = `<h2>${title}</h2><p>${message}</p>`;
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                overlay.remove();
+                popup.remove();
+            }, 3000);
+        }
+
+        function failTestForCheating(reason) {
+            testActive = false;
+            deactivateSecurityFeatures();
+            clearInterval(timerInterval);
+            stopCamera();
+            showStep(4);
+            
+            score = 0;
+            document.getElementById('scoreDisplay').textContent = '0/5';
+            document.getElementById('badgeDisplay').innerHTML = '<div class="badge badge-beginner">🔴 Test Failed</div>';
+            document.getElementById('resultMessage').textContent = reason;
+            
+            const dashButton = document.querySelector('a[href="worker-dashboard.html"]');
+            if (dashButton) {
+                dashButton.textContent = 'Retake Test';
+                dashButton.href = 'skill-test.html';
+            }
+        }
+
+        function activateSecurityFeatures() {
+            // Tab/Window visibility change detection
+            document.addEventListener('visibilitychange', handleTabSwitch);
+            
+            // Back button prevention
+            window.addEventListener('popstate', handleBackButton);
+            
+            // Right click and copy prevention
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showSecurityWarning('⚠️ WARNING!', 'Copying is not allowed during test!');
+                return false;
+            });
+            
+            document.addEventListener('copy', function(e) {
+                e.preventDefault();
+                showSecurityWarning('⚠️ WARNING!', 'Copying is not allowed during test!');
+                return false;
+            });
+            
+            // Window focus/blur detection
+            window.addEventListener('blur', handleWindowBlur);
+            window.addEventListener('focus', handleWindowFocus);
+        }
+
+        function deactivateSecurityFeatures() {
+            document.removeEventListener('visibilitychange', handleTabSwitch);
+            window.removeEventListener('popstate', handleBackButton);
+            document.removeEventListener('contextmenu', function(e) { e.preventDefault(); });
+            document.removeEventListener('copy', function(e) { e.preventDefault(); });
+            window.removeEventListener('blur', handleWindowBlur);
+            window.removeEventListener('focus', handleWindowFocus);
+            
+            const badge = document.getElementById('securityBadge');
+            if (badge) badge.remove();
+        }
+
+        function handleTabSwitch() {
+            if (!testActive) return;
+            
+            if (document.hidden) {
+                showSecurityWarning('⚠️ WARNING!', 'You switched tabs during the test!\nThis is not allowed.\nYour test will end now.');
+                
+                tabSwitchTimeout = setTimeout(() => {
+                    failTestForCheating('Test terminated due to tab switching');
+                }, 3000);
+            } else {
+                if (tabSwitchTimeout) {
+                    clearTimeout(tabSwitchTimeout);
+                    tabSwitchTimeout = null;
+                }
+            }
+        }
+
+        function handleBackButton(event) {
+            if (!testActive) return;
+            event.preventDefault();
+            showSecurityWarning('⚠️ WARNING!', 'You cannot go back during the test!');
+            window.history.pushState(null, null, window.location.href);
+        }
+
+        let windowBlurCount = 0;
+        function handleWindowBlur() {
+            if (!testActive) return;
+            
+            windowBlurCount++;
+            if (windowBlurCount === 1) {
+                showSecurityWarning('⚠️ WARNING!', 'Please keep this window open during the test!');
+                warningCount++;
+                updateWarningBadge();
+                
+                if (warningCount >= 2) {
+                    failTestForCheating('Test terminated due to multiple violations');
+                }
+            }
+        }
+
+        function handleWindowFocus() {
+            if (!testActive) return;
+        }
+
+        window.addEventListener('beforeunload', function() { stopCamera(); });
+        
+        // Initialize identity verification on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeIdentityVerification();
+        });
+    </script>
+</body>
+</html>

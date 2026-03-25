@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <title>Seeker Login - SkillBridge</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="security-utils.js"></script>
+    <script src="api-service.js"></script>
+    <style>
+        /* Login specific styles */
+        .login-container {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            padding: 7rem 2rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .login-card h2 {
+            color: #007bff;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .login-card .subtext {
+            text-align: center;
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .links-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .links-section p {
+            color: #666;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .links-section a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .links-section a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        .links-section .divider {
+            color: #999;
+            margin: 0.5rem 0;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 6rem 1rem 1rem;
+            }
+
+            .login-card {
+                padding: 2rem;
+            }
+
+            .login-card h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 5rem 1rem 1rem;
+            }
+
+            .login-card {
+                padding: 1.5rem;
+            }
+
+            .login-card h2 {
+                font-size: 1.3rem;
+            }
+
+            .login-card .subtext {
+                font-size: 0.9rem;
+            }
+
+            .form-group input {
+                padding: 0.6rem;
+                font-size: 16px;
+            }
+
+            .links-section p {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo">🔗</div>
+            <div class="site-name">SkillBridge</div>
+        </div>
+        <div class="nav-right">
+            <a href="index.html" class="login-btn">Home</a>
+        </div>
+    </nav>
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <h2>Seeker Login</h2>
+            <p class="subtext">Login to access your Skill Passport</p>
+
+            <!-- Rate Limiting Message -->
+            <div class="rate-limit-message" id="rateLimitMessage">
+                Too many failed attempts. Please wait <span class="rate-limit-timer" id="rateLimitTimer">30</span> seconds.
+            </div>
+
+            <form id="loginForm">
+                <!-- Gmail ID -->
+                <div class="form-group">
+                    <label for="gmail">Gmail ID</label>
+                    <input 
+                        type="email" 
+                        id="gmail" 
+                        name="gmail" 
+                        required 
+                        placeholder="example@gmail.com"
+                    >
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        placeholder="Enter your password"
+                    >
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn" id="submitBtn">Login</button>
+            </form>
+
+            <!-- Links Section -->
+            <div class="links-section">
+                <p>
+                    New here? <a href="worker-register.html">Register as Seeker</a>
+                </p>
+                <div class="divider">or</div>
+                <p>
+                    <a href="customer-login.html">Login as Hirer instead</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== RATE LIMITING SETUP ====================
+        function setupRateLimiting() {
+            const emailInput = document.getElementById('gmail');
+            const submitBtn = document.getElementById('submitBtn');
+            const rateLimitMessage = document.getElementById('rateLimitMessage');
+
+            // Check on page load
+            checkRateLimitStatus();
+
+            // Check on email change
+            emailInput.addEventListener('change', checkRateLimitStatus);
+
+            function checkRateLimitStatus() {
+                const email = emailInput.value;
+                if (!email) return;
+
+                const limited = isLoginLimited(email);
+                if (limited.limited) {
+                    showRateLimitScreen(limited.remainingTime);
+                } else {
+                    hideRateLimitScreen();
+                }
+            }
+
+            function showRateLimitScreen(seconds) {
+                submitBtn.disabled = true;
+                rateLimitMessage.classList.add('show');
+                
+                let remaining = seconds;
+                const timer = setInterval(() => {
+                    remaining--;
+                    document.getElementById('rateLimitTimer').textContent = remaining;
+                    
+                    if (remaining <= 0) {
+                        clearInterval(timer);
+                        hideRateLimitScreen();
+                        clearLoginAttempts(emailInput.value);
+                    }
+                }, 1000);
+            }
+
+            function hideRateLimitScreen() {
+                submitBtn.disabled = false;
+                rateLimitMessage.classList.remove('show');
+            }
+        }
+
+        // ==================== FORM SUBMISSION WITH API ====================
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const gmail = sanitizeInput(document.getElementById('gmail').value.trim());
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Check rate limiting
+            const limited = isLoginLimited(gmail);
+            if (limited.limited) {
+                alert(`Too many login attempts. Please wait ${limited.remainingTime} seconds.`);
+                return;
+            }
+
+            // Validate email format
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmail)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            // Validate password
+            if (password.length < 1) {
+                alert('Please enter your password.');
+                return;
+            }
+
+            try {
+                // Call backend API for login
+                const response = await skillBridgeAPI.loginWorker(gmail, password);
+                
+                if (response && response.id) {
+                    // Login successful
+                    clearLoginAttempts(gmail);
+                    
+                    // Create session
+                    createSession(response.id, 'worker');
+
+                    // Store worker info
+                    localStorage.setItem('workerId', response.id);
+                    localStorage.setItem('workerName', response.name);
+                    localStorage.setItem('workerEmail', response.email);
+                    localStorage.setItem('workerPhone', response.phone);
+                    localStorage.setItem('workerLocation', response.location);
+                    localStorage.setItem('workerSkill', response.skill);
+                    localStorage.setItem('workerPassportId', response.skillPassportId);
+                    
+                    sessionStorage.setItem('workerEmail', gmail);
+
+                    // Redirect to dashboard
+                    window.location.href = 'worker-dashboard.html';
+                } else {
+                    // Login failed
+                    const attempts = recordFailedLogin(gmail);
+                    
+                    if (attempts.count >= 3) {
+                        alert('Too many failed attempts. Please try again in 30 seconds.');
+                        submitBtn.disabled = true;
+                        setTimeout(() => {
+                            submitBtn.disabled = false;
+                            clearLoginAttempts(gmail);
+                        }, 30000);
+                    } else {
+                        alert('Invalid email or password. ' + (3 - attempts.count) + ' attempts remaining.');
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const attempts = recordFailedLogin(gmail);
+                
+                if (attempts.count >= 3) {
+                    alert('Too many failed attempts. Please try again in 30 seconds.');
+                    submitBtn.disabled = true;
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        clearLoginAttempts(gmail);
+                    }, 30000);
+                } else {
+                    alert('Error during login. Please try again.');
+                }
+            }
+        });
+
+        // Setup rate limiting on page load
+        document.addEventListener('DOMContentLoaded', setupRateLimiting);
+    </script>
+</body>
+</html>

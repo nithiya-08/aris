@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <title>Worker Registration - SkillBridge</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="security-utils.js"></script>
+    <script src="api-service.js"></script>
+    <style>
+        /* Registration specific styles */
+        .registration-container {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            padding: 7rem 2rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .registration-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .language-toggle {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .language-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #007bff;
+            background-color: white;
+            color: #007bff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .language-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .language-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .registration-card h2 {
+            color: #007bff;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .registration-card .subtext {
+            text-align: center;
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+
+        .form-group .optional {
+            color: #999;
+            font-size: 0.85rem;
+            font-weight: normal;
+        }
+
+        .microphone-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .microphone-btn:hover {
+            background-color: #e9ecef;
+            border-color: #007bff;
+        }
+
+        .microphone-btn.recording {
+            background-color: #ff4444;
+            border-color: #cc0000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .recording-text {
+            display: none;
+            color: #ff4444;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+
+        .recording-text.active {
+            display: block;
+        }
+
+        .password-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #666;
+        }
+
+        .login-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .login-link a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        /* Success message styles */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .success-modal.show {
+            display: flex;
+        }
+
+        .success-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .success-content .checkmark {
+            color: #28a745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-content h3 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-content .skill-id {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #007bff;
+            letter-spacing: 1px;
+        }
+
+        .success-content p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .success-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .success-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .registration-container {
+                padding: 6rem 1rem 1rem;
+            }
+
+            .registration-card {
+                padding: 2rem;
+            }
+
+            .registration-card h2 {
+                font-size: 1.5rem;
+            }
+
+            .password-group {
+                grid-template-columns: 1fr;
+            }
+
+            .success-content {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .registration-container {
+                padding: 5rem 1rem 1rem;
+            }
+
+            .registration-card {
+                padding: 1.5rem;
+            }
+
+            .registration-card h2 {
+                font-size: 1.3rem;
+            }
+
+            .registration-card .subtext {
+                font-size: 0.9rem;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 0.6rem;
+                font-size: 16px;
+            }
+
+            .success-content .checkmark {
+                font-size: 2.5rem;
+            }
+
+            .success-content h3 {
+                font-size: 1.3rem;
+            }
+
+            .language-toggle {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo">🔗</div>
+            <div class="site-name">SkillBridge</div>
+        </div>
+        <div class="nav-right">
+            <a href="worker-login.html" class="login-btn">Login</a>
+        </div>
+    </nav>
+
+    <!-- Registration Container -->
+    <div class="registration-container">
+        <div class="registration-card">
+            <!-- Language Toggle -->
+            <div class="language-toggle">
+                <button class="language-btn active" onclick="setLanguage('en')">English</button>
+                <button class="language-btn" onclick="setLanguage('ta')">தமிழ்</button>
+                <button type="button" class="language-btn" onclick="testVoiceEnglish()" style="background-color: #28a745; border-color: #28a745; color: white;">🧪 Test Voice (EN)</button>
+            </div>
+
+            <h2 id="formTitle">Join as Seeker</h2>
+            <p class="subtext" id="formSubtext">Create your Skill Passport today</p>
+
+            <form id="registrationForm">
+                <!-- Full Name -->
+                <div class="form-group">
+                    <label for="fullName" id="fullNameLabel">Full Name *</label>
+                    <div class="form-group-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="fullName" 
+                            name="fullName" 
+                            required 
+                            placeholder="Enter your full name"
+                        >
+                        <button type="button" class="microphone-btn" onclick="startVoice('fullName')" title="Speak name">🎤</button>
+                    </div>
+                    <div class="recording-text" id="fullName-recording"></div>
+                </div>
+
+                <!-- Gmail ID -->
+                <div class="form-group">
+                    <label for="gmail" id="gmailLabel">Gmail ID *</label>
+                    <input 
+                        type="email" 
+                        id="gmail" 
+                        name="gmail" 
+                        required 
+                        placeholder="example@gmail.com"
+                    >
+                </div>
+
+                <!-- Phone Number -->
+                <div class="form-group">
+                    <label for="phone" id="phoneLabel">Phone Number *</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        required 
+                        placeholder="10-digit mobile number"
+                        pattern="[0-9]{10}"
+                        title="Please enter a valid 10-digit phone number"
+                    >
+                </div>
+
+                <!-- Aadhaar Number -->
+                <div class="form-group">
+                    <label for="aadhaar" id="aadhaarLabel">Aadhaar Number *</label>
+                    <div class="aadhaar-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="aadhaar" 
+                            name="aadhaar" 
+                            required 
+                            placeholder="XXXX XXXX XXXX"
+                            maxlength="14"
+                            inputmode="numeric"
+                        >
+                    </div>
+                    <div class="form-error" id="aadhaarError"></div>
+                </div>
+
+                <!-- Aadhaar Card Image Upload -->
+                <div class="form-group">
+                    <label for="aadhaarImage" id="aadhaarImageLabel">Upload Aadhaar Card Image *</label>
+                    <input 
+                        type="file" 
+                        id="aadhaarImage" 
+                        name="aadhaarImage" 
+                        required 
+                        accept=".jpg,.jpeg,.png,.pdf"
+                    >
+                    <div class="form-error" id="aadhaarImageError"></div>
+                    <div id="uploadSuccessBadge"></div>
+                    <div id="aadhaarPreviewContainer"></div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password" id="passwordLabel">Password *</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        placeholder="Create a strong password"
+                        title="Password must be at least 8 characters with uppercase, number, and special character"
+                    >
+                    <div class="password-strength-indicator" id="passwordStrengthIndicator">
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                    </div>
+                    <div class="password-strength-text" id="passwordStrengthText"></div>
+                    <div class="password-requirements" id="passwordRequirements">
+                        <div class="requirement invalid" id="req-length"><span class="requirement-checkmark">✓</span> 8+ characters</div>
+                        <div class="requirement invalid" id="req-uppercase"><span class="requirement-checkmark">✓</span> At least one uppercase letter</div>
+                        <div class="requirement invalid" id="req-number"><span class="requirement-checkmark">✓</span> At least one number</div>
+                        <div class="requirement invalid" id="req-special"><span class="requirement-checkmark">✓</span> At least one special character</div>
+                    </div>
+                </div>
+
+                <!-- Location / Village / City -->
+                <div class="form-group">
+                    <label for="location" id="locationLabel">Location / Village / City *</label>
+                    <div class="form-group-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="location" 
+                            name="location" 
+                            required 
+                            placeholder="Enter your village or city name"
+                        >
+                        <button type="button" class="microphone-btn" onclick="startVoice('location')" title="Speak location">🎤</button>
+                    </div>
+                    <div class="recording-text" id="location-recording"></div>
+                </div>
+
+                <!-- Skills -->
+                <div class="form-group">
+                    <label for="skills" id="skillsLabel">Skills *</label>
+                    <div class="form-group-input-wrapper">
+                        <select id="skills" name="skills" required>
+                            <option value="">Select your primary skill</option>
+                            <option value="Electrician">Electrician</option>
+                            <option value="Plumber">Plumber</option>
+                            <option value="Mechanic">Mechanic</option>
+                            <option value="Carpenter">Carpenter</option>
+                            <option value="Tailor">Tailor</option>
+                            <option value="Painter">Painter</option>
+                            <option value="Mason">Mason</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <button type="button" class="microphone-btn" onclick="startVoice('skills')" title="Speak skill">🎤</button>
+                    </div>
+                    <div class="recording-text" id="skills-recording"></div>
+                </div>
+
+                <!-- Qualification -->
+                <div class="form-group">
+                    <label for="qualification" id="qualificationLabel">Qualification *</label>
+                    <input
+                        type="text"
+                        id="qualification"
+                        name="qualification"
+                        required
+                        placeholder="e.g. ITI Electrician, Diploma Mechanical"
+                    >
+                </div>
+
+                <!-- Other Skill Input (hidden by default) -->
+                <div class="form-group" id="otherSkillGroup" style="display: none;">
+                    <label for="otherSkill" id="otherSkillLabel">Enter your skill</label>
+                    <input 
+                        type="text" 
+                        id="otherSkill" 
+                        name="otherSkill" 
+                        placeholder="e.g. Coding, Welding, Driving..."
+                    >
+                </div>
+
+                <!-- Skill Level -->
+                <div class="form-group">
+                    <label for="skillLevel" id="skillLevelLabel">Skill Level *</label>
+                    <select id="skillLevel" name="skillLevel" required>
+                        <option value="">Select your skill level</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Expert">Expert</option>
+                    </select>
+                </div>
+
+                <!-- Upload Certificate or Proof -->
+                <div class="form-group">
+                    <label for="certificate" id="certificateLabel">
+                        Upload Certificate or Proof
+                        <span class="optional" id="optionalText">(optional)</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        id="certificate" 
+                        name="certificate" 
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    >
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn" id="submitBtn">Register Now</button>
+            </form>
+
+            <!-- Login Link -->
+            <p class="login-link">
+                <span id="alreadyRegisteredText">Already registered?</span> <a href="worker-login.html" id="loginLinkText">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="success-modal" id="successModal">
+        <div class="success-content">
+            <div class="checkmark">✓</div>
+            <h3 id="successTitle">Skill Passport Created!</h3>
+            <p id="successMessage">Your registration is complete.</p>
+            <div class="skill-id" id="skillId">Your ID: SKILL-100</div>
+            <div id="successAadhaar" style="background-color: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; font-family: 'Courier New', monospace; color: #333;"></div>
+            <p style="color: #999; font-size: 0.9rem; margin-bottom: 1rem;" id="skillIdNote">
+                Keep this ID safe for future reference.
+            </p>
+            <button class="success-btn" onclick="closeSuccessModal()">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== AADHAAR FORMATTING ====================
+        document.getElementById('aadhaar').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length > 12) {
+                value = value.slice(0, 12);
+            }
+            // Format as XXXX XXXX XXXX
+            if (value.length > 8) {
+                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8, 12);
+            } else if (value.length > 4) {
+                value = value.slice(0, 4) + ' ' + value.slice(4, 8);
+            }
+            e.target.value = value;
+        });
+
+        // ==================== AADHAAR IMAGE UPLOAD & PREVIEW ====================
+        document.getElementById('aadhaarImage').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            const errorDiv = document.getElementById('aadhaarImageError');
+            const successBadge = document.getElementById('uploadSuccessBadge');
+            const previewContainer = document.getElementById('aadhaarPreviewContainer');
+
+            // Reset errors
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+            successBadge.innerHTML = '';
+            previewContainer.innerHTML = '';
+
+            if (!file) return;
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) {
+                errorDiv.textContent = 'Only JPG, PNG, or PDF files are allowed';
+                errorDiv.classList.add('show');
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file size (2MB max)
+            if (file.size > 2 * 1024 * 1024) {
+                errorDiv.textContent = 'File size must be under 2MB';
+                errorDiv.classList.add('show');
+                e.target.value = '';
+                return;
+            }
+
+            // Read file as base64
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64 = event.target.result;
+                
+                // Store in session for later
+                sessionStorage.setItem('aadhaarImageBase64', base64);
+                
+                // Show success badge
+                successBadge.innerHTML = '<div class="upload-success-badge">Document Uploaded</div>';
+                
+                // Show preview for images
+                if (file.type !== 'application/pdf') {
+                    const preview = document.createElement('div');
+                    preview.className = 'aadhaar-preview-card';
+                    preview.innerHTML = `
+                        <div class="aadhaar-image-container">
+                            <img src="${base64}" alt="Aadhaar Preview" oncontextmenu="return false" ondragstart="return false">
+                        </div>
+                        <div class="aadhaar-preview-label">Aadhaar Card Preview</div>
+                    `;
+                    previewContainer.appendChild(preview);
+                } else {
+                    previewContainer.innerHTML = '<p style="color: #666; margin-top: 1rem;">📄 PDF file uploaded successfully</p>';
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // ==================== PASSWORD STRENGTH INDICATOR ====================
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strength = validatePasswordStrength(password);
+            
+            // Update strength bars
+            const bars = document.querySelectorAll('.strength-bar');
+            bars.forEach((bar, index) => {
+                bar.classList.remove('filled', 'medium', 'strong');
+                if (index < strength.score) {
+                    bar.classList.add(strength.level);
+                }
+            });
+
+            // Update strength text
+            const strengthText = document.getElementById('passwordStrengthText');
+            if (password.length === 0) {
+                strengthText.textContent = '';
+            } else {
+                strengthText.textContent = 'Strength: ' + strength.level.toUpperCase();
+                strengthText.className = 'password-strength-text strength-' + strength.level;
+            }
+
+            // Update requirements
+            document.getElementById('req-length').classList.toggle('valid', strength.requirements.length);
+            document.getElementById('req-length').classList.toggle('invalid', !strength.requirements.length);
+            
+            document.getElementById('req-uppercase').classList.toggle('valid', strength.requirements.uppercase);
+            document.getElementById('req-uppercase').classList.toggle('invalid', !strength.requirements.uppercase);
+            
+            document.getElementById('req-number').classList.toggle('valid', strength.requirements.number);
+            document.getElementById('req-number').classList.toggle('invalid', !strength.requirements.number);
+            
+            document.getElementById('req-special').classList.toggle('valid', strength.requirements.special);
+            document.getElementById('req-special').classList.toggle('invalid', !strength.requirements.special);
+        });
+
+        // Language translations
+        const translations = {
+            en: {
+                formTitle: "Join as Seeker",
+                formSubtext: "Create your Skill Passport today",
+                fullNameLabel: "Full Name *",
+                gmailLabel: "Gmail ID *",
+                phoneLabel: "Phone Number *",
+                aadhaarLabel: "Aadhaar Number *",
+                aadhaarImageLabel: "Upload Aadhaar Card Image *",
+                passwordLabel: "Password *",
+                confirmPasswordLabel: "Confirm Password *",
+                locationLabel: "Location / Village / City *",
+                skillsLabel: "Skills *",
+                otherSkillLabel: "Enter your skill",
+                skillLevelLabel: "Skill Level *",
+                qualificationLabel: "Qualification *",
+                certificateLabel: "Upload Certificate or Proof",
+                optionalText: "(optional)",
+                submitBtn: "Register Now",
+                alreadyRegisteredText: "Already registered?",
+                loginLinkText: "Login here",
+                successTitle: "Skill Passport Created!",
+                successMessage: "Your registration is complete.",
+                skillIdNote: "Keep this ID safe for future reference."
+            },
+            ta: {
+                formTitle: "சீக்கர்ராக சேரவும்",
+                formSubtext: "இன்று உங்கள் திறன் பாஸ்போர்ட் உருவாக்கவும்",
+                fullNameLabel: "பெயர் *",
+                gmailLabel: "மின்னஞ்சல் *",
+                phoneLabel: "தொலைபேசி எண் *",
+                aadhaarLabel: "ஆதார் எண் *",
+                aadhaarImageLabel: "ஆதார் கார்டு படத்தை பதிவேற்றவும் *",
+                passwordLabel: "கடவுச்சொல் *",
+                confirmPasswordLabel: "கடவுச்சொல் உறுதிப்படுத்தவும் *",
+                locationLabel: "இடம் / கிராமம் / நகரம் *",
+                skillsLabel: "திறன் *",
+                otherSkillLabel: "உங்கள் திறன் உள்ளிடவும்",
+                skillLevelLabel: "திறன் நிலை *",
+                qualificationLabel: "தகுதி *",
+                certificateLabel: "சான்று அல்லது ஆதாரத்தை பதிவேற்றவும்",
+                optionalText: "(விரும்பினால்)",
+                submitBtn: "இப்போது பதிவு செய்யுங்கள்",
+                alreadyRegisteredText: "ஏற்கனவே பதிவு செய்துவிட்டீர்களா?",
+                loginLinkText: "இங்கே உள்நுழையவும்",
+                successTitle: "திறன் பாஸ்போர்ட் உருவாக்கப்பட்டது!",
+                successMessage: "உங்கள் பதிவு முடிந்துவிட்டது.",
+                skillIdNote: "இந்த ID ஐ பாதுகாப்பாக வைத்திருங்கள்."
+            }
+        };
+
+        const skillTranslations = {
+            en: {
+                Electrician: "Electrician",
+                Plumber: "Plumber",
+                Mechanic: "Mechanic",
+                Carpenter: "Carpenter",
+                Tailor: "Tailor",
+                Painter: "Painter",
+                Mason: "Mason",
+                Other: "Other"
+            },
+            ta: {
+                Electrician: "மின்சாரம்",
+                Plumber: "குழாய் வேலை",
+                Mechanic: "மெக்கானிக்",
+                Carpenter: "தச்சன்",
+                Tailor: "தையல்",
+                Painter: "சாயம் பூசுதல்",
+                Mason: "கொத்தனார்",
+                Other: "மற்றவை"
+            }
+        };
+
+        let currentLanguage = 'en';
+        let currentField = null;
+
+        function startVoice(fieldId) {
+            currentField = document.getElementById(fieldId);
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                alert("Your browser does not support voice input. Please use Google Chrome.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 3;
+
+            recognition.onstart = function() {
+                console.log("Started listening...");
+            }
+
+            recognition.onspeechstart = function() {
+                console.log("Speech detected!");
+            }
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                console.log("Result: " + transcript);
+                document.getElementById(fieldId).value = transcript;
+            }
+
+            recognition.onspeechend = function() {
+                recognition.stop();
+                console.log("Speech ended");
+            }
+
+            recognition.onerror = function(event) {
+                console.log("Error: " + event.error);
+                if(event.error === 'aborted') {
+                    alert("Please speak immediately after clicking the mic button!");
+                } else if(event.error === 'no-speech') {
+                    alert("No speech detected. Please try again!");
+                } else {
+                    alert("Error: " + event.error);
+                }
+            }
+
+            try {
+                recognition.start();
+                console.log("Recognition started");
+            } catch(e) {
+                console.log("Start error: " + e);
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            updateLanguage();
+            
+            // Update active button
+            document.querySelectorAll('.language-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function updateLanguage() {
+            const trans = translations[currentLanguage];
+            
+            document.getElementById('formTitle').textContent = trans.formTitle;
+            document.getElementById('formSubtext').textContent = trans.formSubtext;
+            document.getElementById('fullNameLabel').textContent = trans.fullNameLabel;
+            document.getElementById('gmailLabel').textContent = trans.gmailLabel;
+            document.getElementById('phoneLabel').textContent = trans.phoneLabel;
+            document.getElementById('aadhaarLabel').textContent = trans.aadhaarLabel;
+            document.getElementById('aadhaarImageLabel').textContent = trans.aadhaarImageLabel;
+            document.getElementById('passwordLabel').textContent = trans.passwordLabel;
+            document.getElementById('confirmPasswordLabel').textContent = trans.confirmPasswordLabel;
+            document.getElementById('locationLabel').textContent = trans.locationLabel;
+            document.getElementById('skillsLabel').textContent = trans.skillsLabel;
+            document.getElementById('otherSkillLabel').textContent = trans.otherSkillLabel;
+            document.getElementById('skillLevelLabel').textContent = trans.skillLevelLabel;
+            document.getElementById('qualificationLabel').textContent = trans.qualificationLabel;
+            document.getElementById('certificateLabel').textContent = trans.certificateLabel;
+            document.getElementById('optionalText').textContent = trans.optionalText;
+            document.getElementById('submitBtn').textContent = trans.submitBtn;
+            document.getElementById('alreadyRegisteredText').textContent = trans.alreadyRegisteredText;
+            document.getElementById('loginLinkText').textContent = trans.loginLinkText;
+            document.getElementById('successTitle').textContent = trans.successTitle;
+            document.getElementById('successMessage').textContent = trans.successMessage;
+            document.getElementById('skillIdNote').textContent = trans.skillIdNote;
+        }
+
+        // Add click handlers to microphone buttons
+        document.getElementById('skills').addEventListener('change', function() {
+            const otherSkillGroup = document.getElementById('otherSkillGroup');
+            if (this.value === 'Other') {
+                otherSkillGroup.style.display = 'block';
+            } else {
+                otherSkillGroup.style.display = 'none';
+            }
+        });
+
+        // ==================== FORM SUBMISSION WITH AADHAAR & SECURITY ====================
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Get form values
+            const fullName = sanitizeInput(document.getElementById('fullName').value.trim());
+            const gmail = sanitizeInput(document.getElementById('gmail').value.trim());
+            const phone = document.getElementById('phone').value.trim();
+            const aadhaar = document.getElementById('aadhaar').value.replace(/\s/g, ''); // Remove spaces
+            const password = document.getElementById('password').value;
+            const location = sanitizeInput(document.getElementById('location').value.trim());
+            const skills = document.getElementById('skills').value;
+            const skillLevel = document.getElementById('skillLevel').value;
+            const qualification = sanitizeInput(document.getElementById('qualification').value.trim());
+            const aadhaarImage = document.getElementById('aadhaarImage').files[0];
+
+            // ========== VALIDATION ==========
+            
+            // Validate Aadhaar format
+            if (!/^\d{12}$/.test(aadhaar)) {
+                document.getElementById('aadhaarError').textContent = 'Please enter a valid 12-digit Aadhaar number';
+                document.getElementById('aadhaarError').classList.add('show');
+                return;
+            }
+
+            // Check for duplicate Aadhaar
+            const existingWorkers = JSON.parse(localStorage.getItem('registeredWorkers')) || [];
+            if (existingWorkers.some(w => w.aadhaar === aadhaar)) {
+                document.getElementById('aadhaarError').textContent = 'This Aadhaar number is already registered';
+                document.getElementById('aadhaarError').classList.add('show');
+                return;
+            }
+
+            // Validate Aadhaar image uploaded
+            if (!aadhaarImage) {
+                document.getElementById('aadhaarImageError').textContent = 'Please upload Aadhaar card image';
+                document.getElementById('aadhaarImageError').classList.add('show');
+                return;
+            }
+
+            // Validate password strength
+            const passwordStrength = validatePasswordStrength(password);
+            if (!passwordStrength.valid) {
+                alert('Password must contain at least 8 characters, one uppercase letter, one number, and one special character');
+                return;
+            }
+
+            // Validate phone number
+            if (!/^\d{10}$/.test(phone)) {
+                alert('Please enter a valid 10-digit phone number.');
+                return;
+            }
+
+            // Validate email format
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmail)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            // Validate input safety
+            if (!validateInputSafety(fullName) || !validateInputSafety(location) || !validateInputSafety(qualification)) {
+                alert('Invalid input detected. Please remove special characters.');
+                return;
+            }
+
+            try {
+                // Get Aadhaar image base64
+                const aadhaarImageBase64 = sessionStorage.getItem('aadhaarImageBase64');
+                
+                // Hash password
+                const hashedPassword = await hashPassword(password);
+
+                // Prepare worker data
+                const workerData = {
+                    name: fullName,
+                    email: gmail,
+                    phone: phone,
+                    password: hashedPassword,
+                    location: location,
+                    skill: skills,
+                    qualification: qualification,
+                    aadhaar: aadhaar
+                };
+
+                // Call API to register worker
+                const response = await skillBridgeAPI.registerWorker(workerData);
+                
+                if (response && response.id) {
+                    // Save to localStorage
+                    localStorage.setItem('workerName', fullName);
+                    localStorage.setItem('workerEmail', gmail);
+                    localStorage.setItem('workerPhone', phone);
+                    localStorage.setItem('workerLocation', location);
+                    localStorage.setItem('workerSkill', skills);
+                    localStorage.setItem('workerSkillLevel', skillLevel);
+                    localStorage.setItem('workerQualification', qualification);
+                    localStorage.setItem('workerId', response.id);
+                    localStorage.setItem('workerPassportId', response.skillPassportId || 'SKILL_' + response.id);
+                    
+                    // Save Aadhaar data
+                    localStorage.setItem('workerAadhaar', aadhaar);
+                    localStorage.setItem('workerAadhaarImage', aadhaarImageBase64);
+                    
+                    // Add to registered workers list for duplicate checking
+                    const registeredWorkers = JSON.parse(localStorage.getItem('registeredWorkers')) || [];
+                    registeredWorkers.push({
+                        id: response.id,
+                        email: gmail,
+                        phone: phone,
+                        aadhaar: aadhaar
+                    });
+                    localStorage.setItem('registeredWorkers', JSON.stringify(registeredWorkers));
+
+                    // Create session
+                    createSession(response.id, 'worker');
+
+                    // Update success modal
+                    document.getElementById('skillId').textContent = 'Your ID: ' + (response.skillPassportId || 'SKILL_' + response.id);
+                    
+                    // Show masked Aadhaar in modal
+                    const maskedAadhaar = 'XXXX XXXX ' + aadhaar.slice(-4);
+                    document.getElementById('successAadhaar').textContent = 'Aadhaar: ' + maskedAadhaar;
+
+                    // Show success modal
+                    document.getElementById('successModal').classList.add('show');
+
+                    // Clear sensitive data from session
+                    sessionStorage.removeItem('aadhaarImageBase64');
+                    
+                    // Reset form
+                    this.reset();
+                } else {
+                    alert('Error registering worker. Please try again.');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Error connecting to server. Please make sure the backend server is running on http://localhost:8080');
+            }
+        });
+
+        // Close success modal
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('show');
+            // Redirect to dashboard
+            window.location.href = 'worker-dashboard.html';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('successModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuccessModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSuccessModal();
+            }
+        });
+    </script>
+</body>
+</html>
